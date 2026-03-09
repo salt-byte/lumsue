@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { View, SkinReport } from './types';
 import { analyzeSkin } from './services/geminiService';
-import { Sparkles, LayoutDashboard, History, Scan, Sun, Bell, Heart, MessageSquare, Zap, Languages } from 'lucide-react';
+import { supabase, fetchReports, saveReport, signOut } from './services/supabaseService';
+import { Sparkles, LayoutDashboard, History, Scan, Sun, Bell, Heart, MessageSquare, Zap, Languages, LogOut, UserRound } from 'lucide-react';
 import { Language, translations } from './src/i18n';
+import type { User } from '@supabase/supabase-js';
 
 // Components
 import LoginView from './components/LoginView';
@@ -17,6 +19,131 @@ import MentorView from './components/MentorView';
 import RepairView from './components/RepairView';
 import ArchivesView from './components/ArchivesView';
 
+// ─── Mock 数据（游客 Demo 用）────────────────────────────────────────────────
+const MOCK_REPORTS: SkinReport[] = [
+  {
+    id: 'mock-1',
+    timestamp: Date.now() - 86400000 * 12,
+    imageUrl: 'https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?q=80&w=1000&auto=format&fit=crop',
+    totalScore: 68,
+    baumannType: { code: 'OSPW', name: '油性敏感色素性皱纹型', description: '皮脂分泌旺盛，同时伴有屏障受损迹象，对外界刺激较为敏感。色素沉着风险偏高，初期皱纹特征可见。建议侧重控油与屏障修护的双向调节。' },
+    fitzpatrickType: 3,
+    radarMetrics: { health: 60, texture: 55, oilDry: 40, evenness: 50, youth: 65, tolerance: 45 },
+    detailedAnalysis: {
+      zonalOil: { cheeks: 75, tZone: 85, chin: 80 },
+      skinTone: '中性色调', smoothnessMetaphor: '蛋壳',
+      darkCircles: { type: '血管型', percentages: { pigmented: 30, vascular: 60, structural: 10 } },
+      acne: { level: 3, count: 12, severity: '中度炎症' },
+      blackheads: { count: 45, severity: '明显' },
+      pores: { level: 'T3', description: '毛孔明显扩张，伴有油脂堆积，T区最为突出' },
+      redness: { severity: '中度', areas: ['两颊', '鼻翼'] }
+    },
+    areaScores: { eyes: 62, nose: 55, cheeks: 58, lips: 70, forehead: 65 },
+    metrics: {
+      hydration:   { score: 45, label: '干燥',   analysis: '角质层水分流失严重，TEWL偏高，建议加强补水锁水', clinicalNote: '可使用保湿喷雾随时补水' },
+      oilBalance:  { score: 85, label: '极油',   analysis: '皮脂腺分泌旺盛，全脸可见油光，混合性偏油', clinicalNote: '控油产品建议只用于T区' },
+      smoothness:  { score: 50, label: '粗糙',   analysis: '皮肤纹理明显，局部有角质堆积，触感欠佳' },
+      pores:       { score: 40, label: '粗大',   analysis: '毛孔可见度高，尤其T区和鼻翼处，需定期清洁' },
+      evenness:    { score: 55, label: '不均',   analysis: '局部暗沉，色斑风险上升，建议加强防晒' },
+      elasticity:  { score: 60, label: '一般',   analysis: '紧致度尚可，但弹性略有下降，需关注胶原养护' },
+      sensitivity: { score: 80, label: '高敏',   analysis: '屏障受损，对外界刺激（温度/成分）反应强烈', clinicalNote: '避免使用酒精和高浓度酸类产品' },
+      gloss:       { score: 40, label: '暗淡',   analysis: '缺乏自然光泽，肤色发黄，氧化压力较大' },
+      barrier:     { score: 35, label: '受损',   analysis: '皮肤屏障薄弱，TEWL指数偏高，急需神经酰胺类成分修护', clinicalNote: '停止使用强力去角质产品' },
+      glycation:   { score: 65, label: '较高',   analysis: '糖化反应明显，肤色偏黄，建议控制糖分摄入并加强抗氧化' },
+      inflammation:{ score: 70, label: '活跃',   analysis: '皮肤处于亚急性炎症状态，泛红和灼热感明显' }
+    },
+    problems: [
+      { title: '屏障受损', cause: '过度清洁与去角质', suggestion: '停用强力洁面，改用氨基酸洁面，加强神经酰胺类成分补充', actives: ['神经酰胺', '角鲨烷', '泛醇'] },
+      { title: '油脂失衡', cause: '皮脂腺代偿性亢进', suggestion: '轻柔控油，避免过度清洁刺激更多出油', actives: ['烟酰胺', '锌', '绿茶提取物'] }
+    ],
+    lightTherapy: { wavelength: '633nm', duration: '15min', frequency: '每日', color: 'Red', hex: '#FF4444' },
+    skincareRoutine: ['氨基酸温和洁面（早晚）', '修护型化妆水（轻拍至吸收）', '神经酰胺修护精华（重点T区）', '轻质保湿乳液', '物理防晒SPF50+（早间）'],
+    recommendations: [
+      { id: 'p1', name: '修丽可CE复合修护精华液', brand: 'SkinCeuticals', category: '精华', imageUrl: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?q=80&w=400', price: '¥1490', matchReason: '针对OSPW分型，高浓度维C能有效对抗氧化压力，改善色素沉着。', buyUrl: '#', tags: ['抗氧', '提亮'] }
+    ]
+  },
+  {
+    id: 'mock-2',
+    timestamp: Date.now() - 86400000 * 8,
+    imageUrl: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=1000&auto=format&fit=crop',
+    totalScore: 75,
+    baumannType: { code: 'OSPW', name: '油性敏感色素性皱纹型', description: '经过初步修护，皮肤状态有所改善。屏障功能正在重建，敏感程度下降，但仍需持续维护。' },
+    fitzpatrickType: 3,
+    radarMetrics: { health: 70, texture: 65, oilDry: 55, evenness: 65, youth: 70, tolerance: 60 },
+    detailedAnalysis: {
+      zonalOil: { cheeks: 60, tZone: 75, chin: 65 },
+      skinTone: '中性色调', smoothnessMetaphor: '蛋壳',
+      darkCircles: { type: '血管型', percentages: { pigmented: 25, vascular: 65, structural: 10 } },
+      acne: { level: 2, count: 5, severity: '轻度炎症' },
+      blackheads: { count: 25, severity: '中度' },
+      pores: { level: 'T2', description: '毛孔有所收敛，T区状态改善' },
+      redness: { severity: '轻度', areas: ['鼻翼'] }
+    },
+    areaScores: { eyes: 68, nose: 65, cheeks: 70, lips: 75, forehead: 72 },
+    metrics: {
+      hydration:   { score: 58, label: '改善中', analysis: '水分有所回升，角质层状态趋于改善' },
+      oilBalance:  { score: 70, label: '偏油',   analysis: '油分有所控制，T区油光减少' },
+      smoothness:  { score: 55, label: '一般',   analysis: '纹理略有平滑，角质堆积减少' },
+      pores:       { score: 45, label: '一般',   analysis: '毛孔有所收敛，清洁效果显现' },
+      evenness:    { score: 60, label: '改善中', analysis: '肤色趋于均匀，暗沉减轻' },
+      elasticity:  { score: 65, label: '良好',   analysis: '弹性提升，肌肤开始展现活力' },
+      sensitivity: { score: 60, label: '中敏',   analysis: '泛红减少，屏障修护初见成效' },
+      gloss:       { score: 55, label: '一般',   analysis: '光泽度回升，氧化情况有所改善' },
+      barrier:     { score: 50, label: '修护中', analysis: '屏障正在重建，TEWL指数下降' },
+      glycation:   { score: 60, label: '中等',   analysis: '糖化反应有所减缓' },
+      inflammation:{ score: 50, label: '稳定',   analysis: '炎症消退明显，皮肤趋于平稳' }
+    },
+    problems: [
+      { title: '水分不足', cause: '环境干燥与蒸发加速', suggestion: '增加补水面膜频率，建议每周2-3次', actives: ['透明质酸', '泛醇', '甘油'] }
+    ],
+    lightTherapy: { wavelength: '633nm', duration: '10min', frequency: '隔日', color: 'Red', hex: '#FF4444' },
+    skincareRoutine: ['氨基酸洁面', '修护化妆水', '玻尿酸精华', '修护乳液', 'SPF30防晒（早间）'],
+    recommendations: [
+      { id: 'p3', name: '雅诗兰黛特润修护肌活精华露', brand: 'Estée Lauder', category: '精华', imageUrl: 'https://images.unsplash.com/photo-1594465919760-441fe5908ab0?q=80&w=400', price: '¥660', matchReason: '水分回升趋势良好，小棕瓶能进一步强化夜间修护。', buyUrl: '#', tags: ['修护', '维稳'] }
+    ]
+  },
+  {
+    id: 'mock-3',
+    timestamp: Date.now() - 86400000 * 3,
+    imageUrl: 'https://images.unsplash.com/photo-1552668693-d07cba4621d0?q=80&w=1000&auto=format&fit=crop',
+    totalScore: 88,
+    baumannType: { code: 'ONPW', name: '油性耐受色素性皱纹型', description: '皮肤已进入稳定健康状态，屏障功能强健，耐受性明显提升。色素问题需持续关注，抗老需求开始浮现。' },
+    fitzpatrickType: 3,
+    radarMetrics: { health: 85, texture: 88, oilDry: 80, evenness: 85, youth: 90, tolerance: 82 },
+    detailedAnalysis: {
+      zonalOil: { cheeks: 50, tZone: 60, chin: 55 },
+      skinTone: '中性色调', smoothnessMetaphor: '剥壳鸡蛋',
+      darkCircles: { type: '轻微结构型', percentages: { pigmented: 20, vascular: 20, structural: 60 } },
+      acne: { level: 0, count: 0, severity: '无' },
+      blackheads: { count: 5, severity: '极轻微' },
+      pores: { level: 'T1', description: '毛孔细致，整体状态优秀' },
+      redness: { severity: '无', areas: [] }
+    },
+    areaScores: { eyes: 85, nose: 82, cheeks: 88, lips: 90, forehead: 86 },
+    metrics: {
+      hydration:   { score: 72, label: '充足',   analysis: '水分状态理想，角质层饱满' },
+      oilBalance:  { score: 55, label: '平衡',   analysis: '水油趋于平衡，整体状态稳定' },
+      smoothness:  { score: 70, label: '细腻',   analysis: '皮肤触感平滑，纹理均匀细腻' },
+      pores:       { score: 65, label: '细致',   analysis: '毛孔不明显，整体状态良好' },
+      evenness:    { score: 75, label: '均匀',   analysis: '肤色透亮均匀，暗沉消退' },
+      elasticity:  { score: 80, label: '优秀',   analysis: '肌肤饱满有弹性，轮廓清晰' },
+      sensitivity: { score: 30, label: '耐受',   analysis: '屏障功能健全，对刺激不敏感', clinicalNote: '可以尝试功效性成分' },
+      gloss:       { score: 78, label: '透亮',   analysis: '自然健康光泽感，氧化压力低' },
+      barrier:     { score: 82, label: '健康',   analysis: '屏障强韧，保湿锁水功能正常', clinicalNote: '继续当前护理节奏' },
+      glycation:   { score: 40, label: '低',     analysis: '抗糖化效果显著，肤色明亮不发黄' },
+      inflammation:{ score: 20, label: '极低',   analysis: '肤态非常稳定，几乎无炎症反应' }
+    },
+    problems: [
+      { title: '抗老预防', cause: '自然老化与光老化', suggestion: '保持现有护肤习惯，可加入视黄醇类成分进行抗老预防', actives: ['视黄醇', '维C', '烟酰胺', '胜肽'] }
+    ],
+    lightTherapy: { wavelength: '590nm', duration: '5min', frequency: '每周', color: 'Yellow', hex: '#FFAA00' },
+    skincareRoutine: ['温和洁面', '抗氧化精华（维C）', '轻质保湿面霜', '视黄醇精华（晚间）', 'SPF50+防晒（早间）'],
+    recommendations: [
+      { id: 'p4', name: 'SK-II护肤精华露（神仙水）', brand: 'SK-II', category: '精华', imageUrl: 'https://images.unsplash.com/photo-1617897903246-719242758050?q=80&w=400', price: '¥1540', matchReason: '肌肤进入健康平衡态，Pitera成分维持晶莹透亮，保持屏障强韧。', buyUrl: '#', tags: ['晶莹', '平衡'] }
+    ]
+  }
+];
+
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>(View.Login);
   const [reports, setReports] = useState<SkinReport[]>([]);
@@ -25,9 +152,11 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [analysisPromise, setAnalysisPromise] = useState<Promise<SkinReport> | null>(null);
-  const [isNewUser, setIsNewUser] = useState(true); // 新增：是否是新用户
-  const [hasConsulted, setHasConsulted] = useState(false); // 新增：是否已咨询
+  const [isNewUser, setIsNewUser] = useState(true);
+  const [hasConsulted, setHasConsulted] = useState(false);
   const [language, setLanguage] = useState<Language>('zh');
+  const [authUser, setAuthUser] = useState<User | null | 'guest'>(null); // null=未登录, 'guest'=游客, User=真实用户
+  const [authLoading, setAuthLoading] = useState(true);
 
   const t = translations[language];
 
@@ -35,26 +164,40 @@ const App: React.FC = () => {
     setLanguage(prev => prev === 'zh' ? 'en' : 'zh');
   };
 
+  // ─── Supabase Auth 监听 ──────────────────────────────────────────────────────
   useEffect(() => {
-    const saved = localStorage.getItem('aura_history');
-    const isReturning = localStorage.getItem('aura_returning_user');
-    
-    if (isReturning) {
-      setIsNewUser(false);
-      setHasConsulted(true);
-    }
+    // 初始检查是否已登录
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setAuthUser(session.user);
+        fetchReports(session.user.id).then(setReports).catch(() => setReports([]));
+        setIsNewUser(false);
+        setHasConsulted(true);
+      }
+      setAuthLoading(false);
+    });
 
-    if (saved) {
-      try { 
-        const parsed = JSON.parse(saved);
-        if (parsed && parsed.length > 0) {
-          setReports(parsed);
-          return;
-        }
-      } catch (e) {}
-    }
-    
-    // 如果没有保存的数据，初始化一些模拟数据用于展示成长曲线
+    // 监听登录/登出变化（含 OAuth 回调）
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setAuthUser(session.user);
+        fetchReports(session.user.id).then(setReports).catch(() => setReports([]));
+        setIsNewUser(false);
+        setHasConsulted(true);
+        if (currentView === View.Login) setCurrentView(View.Mentor);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // ─── 已废弃的 mock 数据 init（保留结构，不再使用）──────────────────────────
+  useEffect(() => {
+    if (authUser && authUser !== 'guest') return; // 真实用户不用 mock
+    if (authUser === 'guest') setReports(MOCK_REPORTS);
+  }, [authUser]);
+
+  // ─── 以下注释掉的 mock 初始化块，保留供参考 ──────────────────────────────
+  if (false) {
     const mockReports: SkinReport[] = [
       {
         id: 'mock-1',
@@ -235,11 +378,7 @@ const App: React.FC = () => {
       }
     ];
     setReports(mockReports);
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('aura_history', JSON.stringify(reports));
-  }, [reports]);
+  } // end if(false)
 
   const handleStartScan = () => {
     if (!hasConsulted && !isNewUser) {
@@ -251,9 +390,23 @@ const App: React.FC = () => {
   };
   const handleViewHistory = () => setCurrentView(View.History);
   const handleBackToHome = () => setCurrentView(View.Mentor);
-  const handleLogin = () => {
+
+  const handleLogin = (mode: 'user' | 'guest') => {
+    if (mode === 'guest') {
+      setAuthUser('guest');
+      setIsNewUser(false);
+      setHasConsulted(true);
+    }
+    // mode === 'user' 时由 onAuthStateChange 监听器自动处理
     setCurrentView(View.Mentor);
-    localStorage.setItem('aura_returning_user', 'true');
+  };
+
+  const handleSignOut = async () => {
+    if (authUser !== 'guest') await signOut();
+    setAuthUser(null);
+    setReports([]);
+    setCurrentReport(null);
+    setCurrentView(View.Login);
   };
 
   const handleScanComplete = (base64Image: string) => {
@@ -271,6 +424,10 @@ const App: React.FC = () => {
       const report = await analysisPromise;
       setReports(prev => [report, ...prev]);
       setCurrentReport(report);
+      // 真实用户：保存到 Supabase
+      if (authUser && authUser !== 'guest') {
+        saveReport((authUser as User).id, report).catch(console.error);
+      }
       setCurrentView(View.Report);
     } catch (err) {
       setError("临床分析暂时受阻，请确保光线均匀并重试。");
@@ -282,7 +439,15 @@ const App: React.FC = () => {
     }
   };
 
-  if (currentView === View.Login) return <LoginView onEnter={handleLogin} />;
+  if (authLoading) return (
+    <div className="min-h-screen bg-[#FFF0F1] flex items-center justify-center">
+      <div className="text-center space-y-4">
+        <div className="w-12 h-12 border-2 border-[#AF9B60] border-t-transparent rounded-full animate-spin mx-auto" />
+        <p className="text-[10px] uppercase tracking-widest text-[#AF9B60]">LUMSUE</p>
+      </div>
+    </div>
+  );
+  if (currentView === View.Login || !authUser) return <LoginView onEnter={handleLogin} />;
   if (currentView === View.Prep) return <PrepView onConfirm={() => setCurrentView(View.Scanner)} onCancel={handleBackToHome} />;
   if (currentView === View.Scanner) return <ScannerView onCapture={handleScanComplete} onCancel={handleBackToHome} />;
 
@@ -321,13 +486,29 @@ const App: React.FC = () => {
           </button>
         </nav>
 
-        <div className="p-6 mt-auto border-t border-[#E5E4E2]/50">
+        <div className="p-6 mt-auto border-t border-[#E5E4E2]/50 space-y-3">
+          {/* 游客 Demo Banner */}
+          {authUser === 'guest' && (
+            <div className="px-4 py-2 bg-[#FDE2E4]/60 rounded-xl border border-[#E29595]/30 text-center">
+              <p className="text-[8px] font-bold uppercase tracking-widest text-[#E29595]">Demo 游客模式</p>
+              <p className="text-[8px] text-slate-400 mt-0.5">数据仅供展示</p>
+            </div>
+          )}
           <div className="flex items-center gap-3 p-3 rounded-2xl bg-white/40 border border-[#AF9B60]/20">
-             <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#FEE9E9] to-[#D4C5B3] flex items-center justify-center text-white text-[10px] font-medium border-2 border-white shadow-sm">SC</div>
-             <div>
-               <p className="text-[10px] font-semibold text-[#2D2422]">Sophia Chen</p>
-               <p className="text-[8px] text-slate-400 uppercase tracking-widest font-medium">Atelier Elite</p>
-             </div>
+            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#FEE9E9] to-[#D4C5B3] flex items-center justify-center text-white text-[10px] font-medium border-2 border-white shadow-sm shrink-0">
+              {authUser === 'guest' ? <UserRound size={14} /> : ((authUser as User)?.email?.[0]?.toUpperCase() ?? 'U')}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] font-semibold text-[#2D2422] truncate">
+                {authUser === 'guest' ? '游客体验' : (authUser as User)?.email}
+              </p>
+              <p className="text-[8px] text-slate-400 uppercase tracking-widest font-medium">
+                {authUser === 'guest' ? 'Demo Mode' : 'Member'}
+              </p>
+            </div>
+            <button onClick={handleSignOut} className="p-1.5 rounded-lg hover:bg-red-50 text-slate-300 hover:text-red-400 transition-all shrink-0" title="退出">
+              <LogOut size={14} />
+            </button>
           </div>
         </div>
       </aside>
