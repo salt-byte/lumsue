@@ -152,6 +152,7 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [processedImages, setProcessedImages] = useState<string[]>([]);
   const [analysisPromise, setAnalysisPromise] = useState<Promise<SkinReport> | null>(null);
   const [isNewUser, setIsNewUser] = useState(true);
   const [hasConsulted, setHasConsulted] = useState(false);
@@ -551,7 +552,7 @@ const App: React.FC = () => {
         )}
 
         <div className={`flex-1 ${currentView === View.Mentor ? 'p-0' : 'p-6 lg:p-12'} max-w-7xl mx-auto w-full h-full flex flex-col`}>
-           {currentView === View.Processing && capturedImage && <ProcessingView base64Image={capturedImage} onComplete={handleProcessingComplete} />}
+           {currentView === View.Processing && capturedImage && <ProcessingView base64Image={capturedImage} onComplete={handleProcessingComplete} onProcessed={setProcessedImages} />}
            {currentView === View.Loading && <LoadingView />}
            {currentView === View.Mentor && <MentorView isNewUser={isNewUser} lastReport={reports[0]} onNavigate={setCurrentView} onStartScan={handleStartScan} language={language} onToggleLanguage={toggleLanguage} />}
            {(currentView === View.History || currentView === View.Repair) && (
@@ -565,11 +566,12 @@ const App: React.FC = () => {
              />
            )}
            {currentView === View.Report && currentReport && (
-             <ReportView 
-               report={currentReport} 
-               onBack={handleBackToHome} 
-               language={language} 
+             <ReportView
+               report={currentReport}
+               onBack={handleBackToHome}
+               language={language}
                onToggleLanguage={toggleLanguage}
+               processedImages={processedImages}
              />
            )}
         </div>

@@ -7,8 +7,8 @@ const LoadingView: React.FC = () => {
   const steps = [
     { icon: <Zap size={20} />, text: "光谱增强处理...", desc: "正在应用 UV 与交叉偏振算法，提取皮下特征" },
     { icon: <Layers size={20} />, text: "多层深度扫描...", desc: "正在分析表皮层、真皮层与基底层数据" },
-    { icon: <ShieldCheck size={20} />, text: "AI 临床比对...", desc: "正在与 100 万+ 皮肤临床案例进行深度匹配" },
-    { icon: <Sparkles size={20} />, text: "生成专业报告...", desc: "正在基于 Baumann 系统构建您的专属护肤方案" }
+    { icon: <ShieldCheck size={20} />, text: "AI 模型分析中...", desc: "正在识别色素分布、油脂分区、屏障完整性等核心指标" },
+    { icon: <Sparkles size={20} />, text: "生成专属报告...", desc: "正在为您构建个性化护肤方案与临床指标评分" }
   ];
 
   useEffect(() => {

@@ -18,6 +18,7 @@ interface ReportViewProps {
   onBack: () => void;
   language: Language;
   onToggleLanguage: () => void;
+  processedImages?: string[];
 }
 
 const MetricBar: React.FC<{ label: string; score: number; italicLabel: string }> = ({ label, score, italicLabel }) => (
@@ -165,9 +166,18 @@ const AnnotatedFaceImage: React.FC<{ report: SkinReport }> = ({ report }) => {
   );
 };
 
-const ReportView: React.FC<ReportViewProps> = ({ report, onBack, language, onToggleLanguage }) => {
+// 多光谱处理图像的标签配置
+const PROCESSED_IMAGE_LABELS = [
+  { title: '临床影像增强', sub: '高对比度 · 色温校正', color: '#D4AF37', tag: '基础影像' },
+  { title: '黑色素分布图', sub: '色斑 · 晒斑 · 色素沉着', color: '#C8860A', tag: 'UV 光谱' },
+  { title: '炎症热力图', sub: '红色区域 = 痘痘/敏感/炎症', color: '#E05050', tag: '红光通道' },
+  { title: '毛孔纹理精绘', sub: '暗点 = 毛孔 / 细线 = 皮肤纹理', color: '#7C9EB8', tag: '高频通道' },
+];
+
+const ReportView: React.FC<ReportViewProps> = ({ report, onBack, language, onToggleLanguage, processedImages }) => {
   const [activePage, setActivePage] = useState<1 | 2>(1);
   const [showAnnotations, setShowAnnotations] = useState(false);
+  const [lightboxImg, setLightboxImg] = useState<{ src: string; title: string; sub: string } | null>(null);
   const t = translations[language];
 
   const radarData = [
@@ -199,6 +209,25 @@ const ReportView: React.FC<ReportViewProps> = ({ report, onBack, language, onTog
 
   return (
     <div className="animate-fade space-y-12 pb-24">
+      {/* 全屏灯箱 */}
+      {lightboxImg && (
+        <div
+          className="fixed inset-0 z-[300] bg-black/90 flex items-center justify-center p-4 cursor-pointer"
+          onClick={() => setLightboxImg(null)}
+        >
+          <div className="max-w-lg w-full space-y-3" onClick={e => e.stopPropagation()}>
+            <img src={lightboxImg.src} className="w-full rounded-[2rem] shadow-2xl" alt={lightboxImg.title} />
+            <div className="text-center">
+              <p className="text-white font-serif italic text-lg">{lightboxImg.title}</p>
+              <p className="text-white/50 text-[10px] uppercase tracking-widest mt-1">{lightboxImg.sub}</p>
+            </div>
+            <button onClick={() => setLightboxImg(null)} className="w-full py-3 text-white/40 text-[10px] uppercase tracking-widest hover:text-white transition-all">
+              点击关闭
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 顶部控制栏 */}
       <div className="flex flex-col lg:flex-row justify-between items-center gap-6">
         <div className="flex bg-white/50 backdrop-blur-md p-1.5 rounded-full border border-white shadow-sm">
@@ -244,8 +273,8 @@ const ReportView: React.FC<ReportViewProps> = ({ report, onBack, language, onTog
               </div>
               <div className="flex justify-between items-start mb-10">
                 <div>
-                  <h3 className="text-3xl font-serif italic text-[#2D2422]">{t.comprehensiveScore}</h3>
-                  <p className="text-[10px] text-[#AF9B60] font-medium uppercase tracking-widest mt-1">Comprehensive Score</p>
+                  <h3 className="text-3xl font-serif italic text-[#2D2422]">综合肤质评分</h3>
+                  <p className="text-[10px] text-[#AF9B60] font-medium uppercase tracking-widest mt-1">AI 临床级综合分析</p>
                 </div>
                 <div className="text-6xl font-serif text-[#2D2422]">{report.totalScore}</div>
               </div>
@@ -276,13 +305,39 @@ const ReportView: React.FC<ReportViewProps> = ({ report, onBack, language, onTog
               </div>
             </div>
 
-            {/* Baumann 详细解读 */}
+            {/* 肤质分型解读 */}
             <div className="glass-card p-8 rounded-[3rem] border-2 border-white shadow-xl space-y-4">
               <div className="flex items-center gap-3 mb-2">
                 <FlaskConical size={16} className="text-[#AF9B60]" />
-                <h3 className="text-sm font-bold uppercase tracking-widest text-[#2D2422]">Baumann 肤质解读</h3>
+                <div>
+                  <h3 className="text-sm font-bold uppercase tracking-widest text-[#2D2422]">AI 肤质分型解读</h3>
+                  <p className="text-[8px] text-slate-400 mt-0.5">基于 Baumann 16 型皮肤分类系统</p>
+                </div>
               </div>
-              <p className="text-xl font-serif italic text-[#E89B93]">{report.baumannType.code} — {report.baumannType.name}</p>
+              <div className="flex items-center gap-3">
+                <span className="text-2xl font-serif italic text-[#E89B93] shrink-0">{report.baumannType.code}</span>
+                <div className="h-6 w-px bg-[#E5E4E2]" />
+                <span className="text-sm font-bold text-[#2D2422]">{report.baumannType.name}</span>
+              </div>
+              {/* 代码字母解释 */}
+              <div className="flex flex-wrap gap-2">
+                {Array.from(report.baumannType.code).map((letter, i) => {
+                  const meanings: Record<string, { full: string; color: string }> = {
+                    O: { full: '油性肌', color: '#AF9B60' }, D: { full: '干性肌', color: '#7BA7BC' },
+                    S: { full: '敏感型', color: '#E29595' }, R: { full: '耐受型', color: '#82B78D' },
+                    P: { full: '色素型', color: '#C8860A' }, N: { full: '非色素', color: '#9B8EA3' },
+                    W: { full: '皱纹型', color: '#B0926A' }, T: { full: '紧致型', color: '#6BABB5' },
+                  };
+                  const m = meanings[letter];
+                  if (!m) return null;
+                  return (
+                    <span key={i} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[9px] font-bold" style={{ backgroundColor: m.color + '15', color: m.color }}>
+                      <span className="text-[11px] font-serif italic">{letter}</span>
+                      <span>{m.full}</span>
+                    </span>
+                  );
+                })}
+              </div>
               <p className="text-xs text-slate-500 leading-relaxed font-serif-sc">{report.baumannType.description}</p>
               {/* Fitzpatrick */}
               <div className="flex items-center gap-4 pt-4 border-t border-[#E5E4E2]">
@@ -379,6 +434,46 @@ const ReportView: React.FC<ReportViewProps> = ({ report, onBack, language, onTog
                 ))}
               </div>
             </div>
+
+            {/* 多光谱影像分析 */}
+            {processedImages && processedImages.length > 0 && (
+              <div className="space-y-5">
+                <div className="flex items-center justify-between px-1">
+                  <div>
+                    <h3 className="text-xl font-serif italic text-[#2D2422]">多光谱影像分析</h3>
+                    <p className="text-[9px] text-slate-400 uppercase tracking-widest mt-0.5">点击任意图片放大查看</p>
+                  </div>
+                  <Layers size={18} className="text-[#AF9B60]" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  {PROCESSED_IMAGE_LABELS.map((label, i) => {
+                    const src = processedImages[i];
+                    if (!src) return null;
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => setLightboxImg({ src, title: label.title, sub: label.sub })}
+                        className="relative rounded-[1.5rem] overflow-hidden group border-2 border-transparent hover:border-[#AF9B60]/40 transition-all shadow-md"
+                        style={{ aspectRatio: '3/4' }}
+                      >
+                        <img src={src} className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105" alt={label.title} />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                        <div className="absolute bottom-0 left-0 right-0 p-3 text-left">
+                          <span
+                            className="text-[7px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full mb-1 inline-block"
+                            style={{ backgroundColor: label.color + '30', color: label.color, border: `1px solid ${label.color}50` }}
+                          >
+                            {label.tag}
+                          </span>
+                          <p className="text-white text-[10px] font-serif italic leading-tight">{label.title}</p>
+                          <p className="text-white/50 text-[8px] mt-0.5 leading-tight">{label.sub}</p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* 推荐产品 */}
             {report.recommendations && (

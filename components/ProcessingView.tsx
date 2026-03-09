@@ -4,6 +4,7 @@ import { Zap, Layers } from 'lucide-react';
 interface ProcessingViewProps {
   base64Image: string;
   onComplete: () => void;
+  onProcessed?: (images: string[]) => void;
 }
 
 // ─── 像素级图像处理工具函数 ─────────────────────────────────────────────────
@@ -88,7 +89,7 @@ const steps = [
   },
 ];
 
-const ProcessingView: React.FC<ProcessingViewProps> = ({ base64Image, onComplete }) => {
+const ProcessingView: React.FC<ProcessingViewProps> = ({ base64Image, onComplete, onProcessed }) => {
   const [step, setStep] = useState(0);
   const [processedImages, setProcessedImages] = useState<string[]>([]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -217,6 +218,7 @@ const ProcessingView: React.FC<ProcessingViewProps> = ({ base64Image, onComplete
       images.push(canvas.toDataURL('image/jpeg', 0.85));
 
       setProcessedImages(images);
+      onProcessed?.(images);
     };
     img.src = `data:image/jpeg;base64,${base64Image}`;
   }, [base64Image]);

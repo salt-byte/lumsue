@@ -181,7 +181,15 @@ const ScannerView: React.FC<ScannerViewProps> = ({ onCapture, onCancel }) => {
         }
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         ctx.restore();
-        onCapture(canvas.toDataURL('image/jpeg', 0.9).split(',')[1]);
+        // 裁剪：只保留上方 78% 去掉脖子/肩膀，水平居中取 90%
+        const cropW = Math.round(canvas.width * 0.9);
+        const cropH = Math.round(canvas.height * 0.78);
+        const cropX = Math.round((canvas.width - cropW) / 2);
+        const faceCanvas = document.createElement('canvas');
+        faceCanvas.width = cropW;
+        faceCanvas.height = cropH;
+        faceCanvas.getContext('2d')!.drawImage(canvas, cropX, 0, cropW, cropH, 0, 0, cropW, cropH);
+        onCapture(faceCanvas.toDataURL('image/jpeg', 0.9).split(',')[1]);
       }
       setIsFlashing(false);
       // 关闭手电筒
