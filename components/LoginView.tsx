@@ -240,7 +240,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onEnter }) => {
 
       <footer className="fixed bottom-6 lg:bottom-10 left-0 right-0 text-center z-10 px-6">
         <p className="text-[8px] lg:text-[9px] uppercase tracking-[0.3em] lg:tracking-[0.5em] text-[#2D2422]/40 font-medium">
-          © 2025 — LUMSUE EDITORIAL — LUXURY SMART RESTORATION
+          © 2026 — TIANJI CLOUD TECHNOLOGY — LUMSUE AI LAB
         </p>
       </footer>
     </div>
