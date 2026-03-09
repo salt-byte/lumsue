@@ -35,7 +35,7 @@ app.use(cors({
 app.use(express.json({ limit: '20mb' })); // base64 图片约 5-10MB
 
 // ─── Gemini 配置 ──────────────────────────────────────────────────────────────
-const GEMINI_MODEL = 'gemini-2.0-flash';
+const GEMINI_MODEL = 'gemini-2.0-flash-exp';
 
 function getGeminiClient() {
   const apiKey = process.env.GEMINI_API_KEY;
