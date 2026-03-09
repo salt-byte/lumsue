@@ -1,0 +1,7 @@
+{
+  "name": "LUMSUE 肤质检测",
+  "description": "基于 Baumann 肤质系统的 AI 专业肤质检测与护肤管理系统。",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
