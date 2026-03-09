@@ -114,7 +114,7 @@ const RepairView: React.FC<RepairViewProps> = ({ lastReport, language }) => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Zap size={20} className="text-[#AF9B60]" />
-            <h3 className="text-lg font-serif italic text-[#2D2422]">光疗配方方案 / Light Therapy Prescriptions</h3>
+            <h3 className="text-lg font-serif italic text-[#2D2422]">光疗配方方案 <span className="text-xs not-italic text-slate-400 ml-1">· Light Therapy</span></h3>
           </div>
           <button className="text-[10px] font-medium text-[#AF9B60] uppercase tracking-widest flex items-center gap-2 hover:underline">
             查看更多方案 <ArrowRight size={14} />

@@ -18,7 +18,7 @@ const PrepView: React.FC<PrepViewProps> = ({ onConfirm, onCancel }) => {
         </div>
         
         <div className="text-center space-y-2 md:space-y-4">
-          <p className="text-[#D4AF37] font-bold uppercase tracking-[0.4em] md:tracking-[0.6em] text-[8px] md:text-[10px]">PREPARATION RITUAL</p>
+          <p className="text-[#D4AF37] font-bold uppercase tracking-[0.4em] md:tracking-[0.6em] text-[8px] md:text-[10px]">检测仪式 · Preparation Ritual</p>
           <h2 className="text-3xl md:text-6xl serif-heading text-[#3C2A21]">检测准备</h2>
           <p className="text-xs md:text-sm text-[#3C2A21]/50 italic serif-heading">在开始检测前，请确认环境设置</p>
         </div>
@@ -31,13 +31,17 @@ const PrepView: React.FC<PrepViewProps> = ({ onConfirm, onCancel }) => {
                 <span className="text-[9px] md:text-[10px] font-bold tracking-widest uppercase">香薰选择 / Scent</span>
               </div>
               <div className="grid grid-cols-3 md:grid-cols-1 gap-2 md:gap-3">
-                 {['White Tea', 'Sandalwood', 'Rosewood'].map(s => (
-                   <button 
-                    key={s}
-                    onClick={() => setScent(s)}
-                    className={`py-3 md:py-4 px-2 md:px-6 rounded-xl md:rounded-2xl text-[8px] md:text-[10px] font-bold tracking-widest uppercase transition-all border ${scent === s ? 'bg-[#E29595] text-white border-[#E29595]' : 'bg-white/40 text-[#3C2A21]/40 border-transparent hover:border-[#E29595]/20'}`}
+                 {[
+                   { key: 'White Tea',  label: '白茶' },
+                   { key: 'Sandalwood', label: '檀木' },
+                   { key: 'Rosewood',   label: '玫瑰木' }
+                 ].map(s => (
+                   <button
+                    key={s.key}
+                    onClick={() => setScent(s.key)}
+                    className={`py-3 md:py-4 px-2 md:px-6 rounded-xl md:rounded-2xl text-[8px] md:text-[10px] font-bold tracking-widest uppercase transition-all border ${scent === s.key ? 'bg-[#E29595] text-white border-[#E29595]' : 'bg-white/40 text-[#3C2A21]/40 border-transparent hover:border-[#E29595]/20'}`}
                    >
-                     {s.split(' ')[0]}
+                     {s.label}
                    </button>
                  ))}
               </div>
@@ -50,13 +54,17 @@ const PrepView: React.FC<PrepViewProps> = ({ onConfirm, onCancel }) => {
                 <span className="text-[9px] md:text-[10px] font-bold tracking-widest uppercase">氛围灯光 / Mood</span>
               </div>
               <div className="flex flex-wrap justify-center md:justify-start gap-3 md:gap-4">
-                 {['Zenith', 'Velvet', 'Dusk'].map(m => (
-                   <button 
-                    key={m}
-                    onClick={() => setMood(m)}
-                    className={`w-14 h-14 md:w-20 md:h-20 rounded-full flex items-center justify-center text-[7px] md:text-[8px] font-bold tracking-widest uppercase transition-all border-2 ${mood === m ? 'border-[#D4AF37] scale-105 md:scale-110 shadow-lg' : 'border-transparent bg-white/40 opacity-40'}`}
+                 {[
+                   { key: 'Zenith', label: '晴日' },
+                   { key: 'Velvet', label: '暖绒' },
+                   { key: 'Dusk',   label: '暮光' }
+                 ].map(m => (
+                   <button
+                    key={m.key}
+                    onClick={() => setMood(m.key)}
+                    className={`w-14 h-14 md:w-20 md:h-20 rounded-full flex items-center justify-center text-[7px] md:text-[8px] font-bold tracking-widest transition-all border-2 ${mood === m.key ? 'border-[#D4AF37] scale-105 md:scale-110 shadow-lg' : 'border-transparent bg-white/40 opacity-40'}`}
                    >
-                     {m}
+                     {m.label}
                    </button>
                  ))}
               </div>

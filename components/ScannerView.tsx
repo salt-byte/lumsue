@@ -372,11 +372,11 @@ const ScannerView: React.FC<ScannerViewProps> = ({ onCapture, onCancel }) => {
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 lg:gap-0">
           <div className="flex gap-8 lg:gap-12 w-full sm:w-auto justify-around sm:justify-start">
             <div className="space-y-0.5 lg:space-y-1">
-              <p className="text-[7px] lg:text-[9px] font-bold text-[#3C2A21]/40 tracking-widest uppercase">Luminosity</p>
-              <p className="text-base lg:text-xl serif-heading italic text-[#D4AF37]">Premium</p>
+              <p className="text-[7px] lg:text-[9px] font-bold text-[#3C2A21]/40 tracking-widest uppercase">光感 · Luminosity</p>
+              <p className="text-base lg:text-xl serif-heading italic text-[#D4AF37]">优质</p>
             </div>
             <div className="space-y-0.5 lg:space-y-1">
-              <p className="text-[7px] lg:text-[9px] font-bold text-[#3C2A21]/40 tracking-widest uppercase">Hydration</p>
+              <p className="text-[7px] lg:text-[9px] font-bold text-[#3C2A21]/40 tracking-widest uppercase">含水量 · Hydration</p>
               <p className="text-base lg:text-xl serif-heading italic text-[#D4AF37]">74%</p>
             </div>
           </div>
@@ -403,7 +403,7 @@ const ScannerView: React.FC<ScannerViewProps> = ({ onCapture, onCancel }) => {
               <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full border border-[#D4AF37]/20 flex items-center justify-center text-[#D4AF37] group-hover:bg-[#D4AF37] group-hover:text-white transition-all">
                 <Sparkles size={18} className="lg:w-5 lg:h-5" />
               </div>
-              <span className="text-[8px] font-bold tracking-widest uppercase opacity-40">Ritual</span>
+              <span className="text-[8px] font-bold tracking-widest uppercase opacity-40">仪式</span>
             </button>
           </div>
         </div>

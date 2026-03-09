@@ -65,7 +65,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onStart, lastReport }) => {
                     <span className="text-xs lg:text-sm font-bold tracking-[0.4em] uppercase">点击开启实时光谱扫描</span>
                     <ArrowRight size={18} className="group-hover:translate-x-2 transition-transform lg:w-5 lg:h-5" />
                  </div>
-                 <p className="text-[8px] lg:text-[10px] text-[#3C2A21]/40 uppercase tracking-[0.5em] font-bold text-center">Initiate Real-time Spectral Scan</p>
+                 <p className="text-[8px] lg:text-[10px] text-[#3C2A21]/40 uppercase tracking-[0.5em] font-bold text-center">实时光谱扫描 · Spectral Scan</p>
               </div>
            </div>
 
@@ -122,7 +122,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onStart, lastReport }) => {
                  </div>
                  <div>
                    <p className="text-[8px] lg:text-[9px] font-bold uppercase tracking-widest text-slate-400">平均含水量</p>
-                   <p className="text-xl lg:text-2xl serif-heading italic text-[#3C2A21]">{lastReport?.metrics.hydration.score || 74}% <span className="text-[10px] not-italic text-[#E29595] ml-1 lg:ml-2 font-bold">Optimal</span></p>
+                   <p className="text-xl lg:text-2xl serif-heading italic text-[#3C2A21]">{lastReport?.metrics.hydration.score || 74}% <span className="text-[10px] not-italic text-[#E29595] ml-1 lg:ml-2 font-bold">最佳</span></p>
                  </div>
               </div>
               <div className="glass-card p-6 lg:p-8 rounded-[2rem] lg:rounded-[2.5rem] flex items-center gap-4 lg:gap-6 border-gold-luxe">
@@ -131,7 +131,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onStart, lastReport }) => {
                  </div>
                  <div>
                    <p className="text-[8px] lg:text-[9px] font-bold uppercase tracking-widest text-slate-400">皮层透明度</p>
-                   <p className="text-xl lg:text-2xl serif-heading italic text-[#3C2A21]">高 (High) <span className="text-[10px] not-italic text-[#D4AF37] ml-1 lg:ml-2 font-bold">Refined</span></p>
+                   <p className="text-xl lg:text-2xl serif-heading italic text-[#3C2A21]">高 <span className="text-[10px] not-italic text-[#D4AF37] ml-1 lg:ml-2 font-bold">通透</span></p>
                  </div>
               </div>
            </div>

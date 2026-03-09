@@ -87,8 +87,87 @@ const CLINICAL_METRICS = [
   { key: 'inflammation',label: '炎症反应',   en: 'Inflammation' },
 ] as const;
 
+// 面部标注层 — 根据检测数据在照片上叠加临床标签
+const AnnotatedFaceImage: React.FC<{ report: SkinReport }> = ({ report }) => {
+  const scoreColor = (s: number) => s >= 75 ? '#AF9B60' : s >= 50 ? '#E89B93' : '#E29595';
+  const annotations = [
+    {
+      top: '14%', left: '50%', transform: 'translateX(-50%)',
+      label: '额头', value: `${report.areaScores.forehead}分`,
+      detail: report.metrics.evenness?.score < 60 ? '色素不均' : '肤色均匀',
+      color: scoreColor(report.areaScores.forehead),
+    },
+    {
+      top: '30%', left: '18%', transform: '',
+      label: '眼周', value: report.detailedAnalysis.darkCircles.type,
+      detail: `色素型 ${report.detailedAnalysis.darkCircles.percentages.pigmented}%`,
+      color: '#E29595',
+    },
+    {
+      top: '44%', left: '50%', transform: 'translateX(-50%)',
+      label: '鼻部', value: `黑头 ${report.detailedAnalysis.blackheads.count} 处`,
+      detail: report.detailedAnalysis.blackheads.severity,
+      color: scoreColor(report.areaScores.nose),
+    },
+    {
+      top: '52%', left: '15%', transform: '',
+      label: '左脸颊', value: `${report.areaScores.cheeks}分`,
+      detail: report.detailedAnalysis.redness.severity ? `泛红：${report.detailedAnalysis.redness.severity}` : '状态稳定',
+      color: scoreColor(report.areaScores.cheeks),
+    },
+    {
+      top: '52%', right: '12%', transform: '',
+      label: '右脸颊', value: `油脂 ${report.detailedAnalysis.zonalOil.cheeks}%`,
+      detail: report.detailedAnalysis.zonalOil.cheeks > 60 ? '偏油' : '平衡',
+      color: scoreColor(100 - Math.abs(report.detailedAnalysis.zonalOil.cheeks - 50)),
+    },
+    {
+      top: '72%', left: '50%', transform: 'translateX(-50%)',
+      label: '下巴', value: `痤疮 Lv.${report.detailedAnalysis.acne.level}`,
+      detail: `${report.detailedAnalysis.acne.count} 处活跃`,
+      color: report.detailedAnalysis.acne.level > 2 ? '#E29595' : '#AF9B60',
+    },
+  ];
+
+  return (
+    <div className="relative w-full rounded-[2rem] overflow-hidden bg-black shadow-xl" style={{ aspectRatio: '3/4' }}>
+      <img
+        src={report.imageUrl}
+        alt="扫描原片"
+        className="w-full h-full object-cover opacity-90"
+        referrerPolicy="no-referrer"
+      />
+      {/* 暗色渐变叠加 */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40 pointer-events-none" />
+      {/* 标注标签 */}
+      {annotations.map((a, i) => (
+        <div
+          key={i}
+          className="absolute flex items-center gap-1.5"
+          style={{ top: a.top, left: a.left, right: a.right, transform: a.transform }}
+        >
+          <div className="w-2 h-2 rounded-full shadow-md shrink-0 animate-pulse" style={{ backgroundColor: a.color }} />
+          <div className="bg-black/70 backdrop-blur-md border rounded-xl px-3 py-1.5 shadow-lg" style={{ borderColor: a.color + '40' }}>
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] font-bold text-white/70 uppercase tracking-widest">{a.label}</span>
+              <span className="text-[10px] font-serif italic" style={{ color: a.color }}>{a.value}</span>
+            </div>
+            <p className="text-[8px] text-white/50 mt-0.5">{a.detail}</p>
+          </div>
+        </div>
+      ))}
+      {/* 底部标注说明 */}
+      <div className="absolute bottom-4 left-4 right-4 bg-black/60 backdrop-blur-md rounded-2xl px-4 py-3 flex items-center justify-between">
+        <span className="text-[8px] text-white/50 uppercase tracking-widest font-bold">AI 临床影像分析 · 6区标注</span>
+        <span className="text-[8px] text-[#D4AF37] font-bold uppercase tracking-widest">{new Date(report.timestamp).toLocaleDateString('zh-CN')}</span>
+      </div>
+    </div>
+  );
+};
+
 const ReportView: React.FC<ReportViewProps> = ({ report, onBack, language, onToggleLanguage }) => {
   const [activePage, setActivePage] = useState<1 | 2>(1);
+  const [showAnnotations, setShowAnnotations] = useState(false);
   const t = translations[language];
 
   const radarData = [
@@ -215,6 +294,31 @@ const ReportView: React.FC<ReportViewProps> = ({ report, onBack, language, onTog
               </div>
             </div>
 
+            {/* 影像标注预览入口 */}
+            <button
+              onClick={() => { setActivePage(2); setShowAnnotations(true); }}
+              className="w-full glass-card p-0 rounded-[2.5rem] border-2 border-white shadow-xl overflow-hidden group text-left relative"
+            >
+              <div className="relative h-40 overflow-hidden">
+                <img
+                  src={report.imageUrl}
+                  className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
+                  alt="扫描原片"
+                  referrerPolicy="no-referrer"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                <div className="absolute bottom-4 left-5 right-5 flex items-center justify-between">
+                  <div>
+                    <p className="text-white text-sm font-serif italic">查看 AI 影像标注分析</p>
+                    <p className="text-white/50 text-[9px] uppercase tracking-widest font-bold mt-0.5">6 区域临床标注</p>
+                  </div>
+                  <div className="w-8 h-8 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white group-hover:bg-[#AF9B60] transition-all">
+                    <ChevronRight size={16} />
+                  </div>
+                </div>
+              </div>
+            </button>
+
             <div className="glass-card p-8 rounded-[3rem] border-2 border-white shadow-xl space-y-8">
               <h3 className="text-xl font-serif italic text-[#2D2422]">出油分布 / Oil Distribution</h3>
               <div className="space-y-6">
@@ -306,9 +410,38 @@ const ReportView: React.FC<ReportViewProps> = ({ report, onBack, language, onTog
         <div className="grid grid-cols-12 gap-8 lg:gap-12">
           {/* 左列 */}
           <div className="col-span-12 lg:col-span-6 space-y-8">
+            {/* 扫描影像标注分析 */}
+            <div className="glass-card p-8 rounded-[3rem] border-2 border-white shadow-xl">
+              <button
+                onClick={() => setShowAnnotations(p => !p)}
+                className="w-full flex items-center justify-between gap-4 group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-[#2D2422] rounded-xl flex items-center justify-center text-white">
+                    <Layers size={16} />
+                  </div>
+                  <div className="text-left">
+                    <h3 className="text-base font-serif italic text-[#2D2422]">AI 扫描影像标注</h3>
+                    <p className="text-[8px] text-slate-400 font-medium uppercase tracking-widest mt-0.5">6 区域临床标注 · 原始影像</p>
+                  </div>
+                </div>
+                <div className={`text-[10px] font-bold text-[#AF9B60] uppercase tracking-widest transition-transform duration-300 ${showAnnotations ? 'rotate-180' : ''}`}>
+                  {showAnnotations ? '▲ 收起' : '▼ 展开'}
+                </div>
+              </button>
+              {showAnnotations && (
+                <div className="mt-6">
+                  <AnnotatedFaceImage report={report} />
+                  <p className="text-[9px] text-slate-400 text-center mt-4 leading-relaxed font-serif-sc italic">
+                    以上标注由 AI 影像算法自动生成，仅供参考，不构成医疗诊断
+                  </p>
+                </div>
+              )}
+            </div>
+
             {/* 区域评分地图 */}
             <div className="glass-card p-10 rounded-[3rem] border-2 border-white shadow-2xl relative overflow-hidden">
-              <h3 className="text-2xl font-serif italic text-[#2D2422] mb-10">区域评分地图 / Area Map</h3>
+              <h3 className="text-2xl font-serif italic text-[#2D2422] mb-10">区域评分地图</h3>
               <div className="relative aspect-square max-w-sm mx-auto">
                 <div className="absolute inset-0 bg-[#FDE2E4]/20 rounded-full flex items-center justify-center">
                   <div className="relative w-full h-full">
@@ -405,7 +538,7 @@ const ReportView: React.FC<ReportViewProps> = ({ report, onBack, language, onTog
                   <div className="p-6 bg-slate-50 rounded-3xl">
                     <p className="text-[8px] font-medium text-slate-400 uppercase tracking-widest mb-1">毛孔等级</p>
                     <p className="text-2xl font-serif text-[#2D2422]">{report.detailedAnalysis.pores.level}</p>
-                    <p className="text-[8px] text-[#AF9B60] font-medium uppercase mt-1">Pore Grade</p>
+                    <p className="text-[8px] text-[#AF9B60] font-medium uppercase mt-1">毛孔评级</p>
                   </div>
                 </div>
                 <p className="text-xs text-slate-500 leading-relaxed font-serif-sc italic">

@@ -16,6 +16,7 @@ import HistoryView from './components/HistoryView';
 import PrepView from './components/PrepView';
 import ProcessingView from './components/ProcessingView';
 import MentorView from './components/MentorView';
+import FloatingMentor from './components/FloatingMentor';
 import RepairView from './components/RepairView';
 import ArchivesView from './components/ArchivesView';
 
@@ -155,8 +156,9 @@ const App: React.FC = () => {
   const [isNewUser, setIsNewUser] = useState(true);
   const [hasConsulted, setHasConsulted] = useState(false);
   const [language, setLanguage] = useState<Language>('zh');
-  const [authUser, setAuthUser] = useState<User | null | 'guest'>(null); // null=未登录, 'guest'=游客, User=真实用户
+  const [authUser, setAuthUser] = useState<User | null | 'guest'>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [pendingQuestion, setPendingQuestion] = useState<string | undefined>();
 
   const t = translations[language];
 
@@ -599,6 +601,15 @@ const App: React.FC = () => {
           <span className="text-[8px] font-medium uppercase tracking-widest">档案</span>
         </button>
       </nav>
+
+      {/* 悬浮导师（MentorView 页隐藏，避免与主界面重叠）*/}
+      {currentView !== View.Mentor && (
+        <FloatingMentor
+          lastReport={reports[0] ?? null}
+          pendingQuestion={pendingQuestion}
+          onClearPending={() => setPendingQuestion(undefined)}
+        />
+      )}
 
       {error && (
         <div className="fixed bottom-24 lg:bottom-12 right-6 lg:right-12 bg-white/95 backdrop-blur-xl border-l-4 border-[#AF9B60] px-6 lg:px-8 py-4 lg:py-5 rounded shadow-2xl z-[200] animate-fade max-w-[calc(100vw-3rem)]">

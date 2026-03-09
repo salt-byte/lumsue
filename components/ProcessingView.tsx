@@ -127,7 +127,7 @@ const ProcessingView: React.FC<ProcessingViewProps> = ({ base64Image, onComplete
             <div className="bg-white/90 backdrop-blur-xl p-6 rounded-[2rem] border border-white shadow-xl animate-fade">
                <div className="flex justify-between items-center mb-2">
                   <p className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-widest">
-                    {step < steps.length ? `Step 0${step + 1} / 04` : 'Processing Complete'}
+                    {step < steps.length ? `步骤 0${step + 1} / 04` : '处理完成'}
                   </p>
                   <div className="flex gap-1">
                     {[0, 1, 2, 3].map(i => (
@@ -139,7 +139,7 @@ const ProcessingView: React.FC<ProcessingViewProps> = ({ base64Image, onComplete
                  {step < steps.length ? steps[step].title : '正在生成深度光谱报告...'}
                </h3>
                <p className="text-[10px] text-slate-400 uppercase tracking-widest mt-1">
-                 {step < steps.length ? steps[step].desc : 'AI 引擎正在进行高维度计算...'}
+                 {step < steps.length ? steps[step].desc : 'AI 引擎高维度计算中...'}
                </p>
             </div>
           </div>

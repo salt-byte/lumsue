@@ -158,7 +158,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onEnter }) => {
                   <div className="border-b border-[#2D2422]/15 pb-2 flex items-center gap-3">
                     <Mail size={14} className="text-[#2D2422]/30 shrink-0" />
                     <div className="flex-1">
-                      <label className="text-[8px] lg:text-[9px] uppercase tracking-[0.3em] font-medium text-[#2D2422]/50 mb-1 block">MEMBER ID</label>
+                      <label className="text-[8px] lg:text-[9px] uppercase tracking-[0.3em] font-medium text-[#2D2422]/50 mb-1 block">会员账号 · Member ID</label>
                       <input
                         type="email"
                         placeholder="your@email.com"
@@ -174,9 +174,9 @@ const LoginView: React.FC<LoginViewProps> = ({ onEnter }) => {
                     <Lock size={14} className="text-[#2D2422]/30 shrink-0" />
                     <div className="flex-1">
                       <div className="flex justify-between items-center mb-1">
-                        <label className="text-[8px] lg:text-[9px] uppercase tracking-[0.3em] font-medium text-[#2D2422]/50">SECURITY KEY</label>
+                        <label className="text-[8px] lg:text-[9px] uppercase tracking-[0.3em] font-medium text-[#2D2422]/50">访问密钥 · Security Key</label>
                         {authMode === 'login' && (
-                          <button type="button" className="text-[8px] uppercase tracking-widest text-[#AF9B60]">FORGOTTEN?</button>
+                          <button type="button" className="text-[8px] uppercase tracking-widest text-[#AF9B60]">忘记密码</button>
                         )}
                       </div>
                       <div className="flex items-center gap-2">
@@ -208,7 +208,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onEnter }) => {
                 {/* 分割线 */}
                 <div className="relative flex items-center">
                   <div className="flex-grow border-t border-[#2D2422]/10" />
-                  <span className="mx-6 text-[8px] uppercase tracking-[0.4em] opacity-30 italic">or</span>
+                  <span className="mx-6 text-[8px] uppercase tracking-[0.4em] opacity-30 italic">或</span>
                   <div className="flex-grow border-t border-[#2D2422]/10" />
                 </div>
 
