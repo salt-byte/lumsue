@@ -35,7 +35,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onEnter }) => {
         onEnter('user');
       } else {
         await signUp(email, password);
-        setSuccessMsg('注册成功！请检查邮箱完成验证，然后登录。');
+        setSuccessMsg('注册成功！请直接登录。');
         setAuthMode('login');
       }
     } catch (err: any) {
