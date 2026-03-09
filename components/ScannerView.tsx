@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { X, Sparkles, ShieldCheck, Sun, Target, Zap, ZapOff } from 'lucide-react';
+import { X, Sparkles, ShieldCheck, Sun, Target, Zap, ZapOff, Eye } from 'lucide-react';
 
 interface ScannerViewProps {
   onCapture: (base64: string) => void;
@@ -140,7 +140,7 @@ const ScannerView: React.FC<ScannerViewProps> = ({ onCapture, onCancel }) => {
   useEffect(() => {
     if (alignmentProgress === 100 && detectionStatus === 'aligning') {
       setDetectionStatus('counting');
-      speak("准备拍摄，三，二，一");
+      speak("准备拍摄，请轻闭双眼，三，二，一");
       setCountdown(3);
     }
   }, [alignmentProgress, speak]);
@@ -354,7 +354,8 @@ const ScannerView: React.FC<ScannerViewProps> = ({ onCapture, onCancel }) => {
               {[
                 { icon: <Sun size={14} />, label: '光线充足' },
                 { icon: <Target size={14} />, label: '正对镜头' },
-                { icon: <Sparkles size={14} />, label: '移除遮挡' }
+                { icon: <Sparkles size={14} />, label: '移除遮挡' },
+                { icon: <Eye size={14} />, label: '轻闭双眼' }
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-2 text-white/80">
                   <div className="text-[#D4AF37]">{item.icon}</div>
