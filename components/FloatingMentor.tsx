@@ -129,7 +129,7 @@ const FloatingMentor: React.FC<FloatingMentorProps> = ({ lastReport, pendingQues
             style={{ left: selection.x, top: selection.y }}
           >
             <img src={MENTOR_AVATAR} className="w-4 h-4 rounded-full object-cover" />
-            询问 LUMSUE
+            询问 Éclat
           </motion.button>
         )}
       </AnimatePresence>
@@ -143,7 +143,7 @@ const FloatingMentor: React.FC<FloatingMentorProps> = ({ lastReport, pendingQues
             exit={{ scale: 0, opacity: 0 }}
             onClick={() => setOpen(true)}
             className="fixed bottom-28 lg:bottom-10 right-5 lg:right-10 z-[200] w-14 h-14 rounded-full shadow-2xl overflow-hidden border-2 border-white/80 hover:scale-110 transition-transform"
-            title="询问 LUMSUE 导师"
+            title="询问 Éclat 导师"
           >
             <img src={MENTOR_AVATAR} className="w-full h-full object-cover" />
             <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-400 rounded-full border-2 border-white" />
@@ -166,7 +166,7 @@ const FloatingMentor: React.FC<FloatingMentorProps> = ({ lastReport, pendingQues
             <div className="flex items-center gap-3 px-5 py-4 border-b border-[#F5F3F0] bg-gradient-to-r from-[#FFF0F1] to-white">
               <img src={MENTOR_AVATAR} className="w-9 h-9 rounded-full object-cover border-2 border-white shadow" />
               <div className="flex-1">
-                <p className="text-sm font-serif italic text-[#2D2422]">LUMSUE 护肤导师</p>
+                <p className="text-sm font-serif italic text-[#2D2422]">Éclat 护肤导师</p>
                 <p className="text-[9px] text-green-500 font-medium uppercase tracking-widest">● 在线咨询</p>
               </div>
               <button onClick={() => setOpen(false)} className="p-1.5 rounded-full hover:bg-[#F5F3F0] text-[#2D2422]/40">
@@ -179,7 +179,7 @@ const FloatingMentor: React.FC<FloatingMentorProps> = ({ lastReport, pendingQues
               {messages.length === 0 && (
                 <div className="text-center pt-8 space-y-3">
                   <img src={MENTOR_AVATAR} className="w-16 h-16 rounded-full mx-auto object-cover border-4 border-white shadow-lg" />
-                  <p className="text-sm font-serif italic text-[#2D2422]">您好，我是 LUMSUE</p>
+                  <p className="text-sm font-serif italic text-[#2D2422]">您好，我是 Éclat</p>
                   <p className="text-[11px] text-slate-400 leading-relaxed px-4">您可以直接选中报告中的任意文字询问我，或在此输入您的护肤问题。</p>
                 </div>
               )}

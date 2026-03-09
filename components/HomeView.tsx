@@ -33,7 +33,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onStart, lastReport }) => {
              </div>
           </div>
           <p className="max-w-md text-left md:text-right text-[9px] lg:text-[10px] text-[#3C2A21]/50 italic leading-relaxed font-serif-sc">
-            欢迎回到您的私人美学空间。这里汇集了皮肤指标、环境控制与 LUMSUE 护肤建议。
+            欢迎回到您的私人美学空间。这里汇集了皮肤指标、环境控制与 Éclat 护肤建议。
           </p>
         </div>
       </div>

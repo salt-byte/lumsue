@@ -391,7 +391,7 @@ const App: React.FC = () => {
 
   const handleStartScan = () => {
     if (!hasConsulted && !isNewUser) {
-      setError("在扫描前，请先与 LUMSUE 进行简短咨询。");
+      setError("在扫描前，请先与 Éclat 进行简短咨询。");
       setCurrentView(View.Mentor);
       return;
     }
@@ -452,7 +452,7 @@ const App: React.FC = () => {
     <div className="min-h-screen bg-[#FFF0F1] flex items-center justify-center">
       <div className="text-center space-y-4">
         <div className="w-12 h-12 border-2 border-[#AF9B60] border-t-transparent rounded-full animate-spin mx-auto" />
-        <p className="text-[10px] uppercase tracking-widest text-[#AF9B60]">LUMSUE</p>
+        <p className="text-[10px] uppercase tracking-widest text-[#AF9B60]">Éclat</p>
       </div>
     </div>
   );
@@ -468,7 +468,7 @@ const App: React.FC = () => {
           <div className="w-10 h-10 bg-gradient-to-br from-[#AF9B60] to-[#D4C5B3] rounded-full flex items-center justify-center text-white shadow-lg shadow-[#AF9B60]/20">
             <Sparkles size={20} />
           </div>
-          <span className="text-xl font-serif italic tracking-wider text-[#2D2422]">LUMSUE</span>
+          <span className="text-xl font-serif italic tracking-wider text-[#2D2422]">Éclat</span>
         </div>
         
         <nav className="flex-1 px-5 space-y-3 pt-8">

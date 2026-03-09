@@ -3,9 +3,9 @@ export type Language = 'zh' | 'en';
 
 export const translations = {
   zh: {
-    mentorName: 'LUMSUE',
+    mentorName: 'Éclat',
     mentorTagline: '您的私人护肤导师',
-    inputPlaceholder: '向 LUMSUE 提问...',
+    inputPlaceholder: '向 Éclat 提问...',
     startScan: '开始扫描',
     history: '档案',
     repair: '修护',
@@ -37,9 +37,9 @@ export const translations = {
     standardMode: '标准模式',
   },
   en: {
-    mentorName: 'LUMSUE',
+    mentorName: 'Éclat',
     mentorTagline: 'Your Private Skincare Mentor',
-    inputPlaceholder: 'Ask LUMSUE...',
+    inputPlaceholder: 'Ask Éclat...',
     startScan: 'Start Scan',
     history: 'History',
     repair: 'Repair',

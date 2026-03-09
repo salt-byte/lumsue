@@ -35,8 +35,8 @@ const MentorView: React.FC<MentorViewProps> = ({ isNewUser, lastReport, onNaviga
         id: '1',
         role: 'assistant',
         content: isNewUser 
-          ? "您好，我是 LUMSUE 实验室的首席护肤导师。很高兴能为您提供专业的皮肤学咨询。在开始深度诊断前，我们需要通过 AI 临床级扫描获取您的底层皮肤数据。您准备好开启首次肤质检测了吗？"
-          : `欢迎回来。我是 LUMSUE，您的私人皮肤专家。我一直在关注您的皮肤屏障修复进度。今天，您是想针对具体的皮肤问题进行深度咨询，还是希望通过最新的扫描数据来优化您的护肤方案？`,
+          ? "您好，我是 Éclat 实验室的首席护肤导师。很高兴能为您提供专业的皮肤学咨询。在开始深度诊断前，我们需要通过 AI 临床级扫描获取您的底层皮肤数据。您准备好开启首次肤质检测了吗？"
+          : `欢迎回来。我是 Éclat，您的私人皮肤专家。我一直在关注您的皮肤屏障修复进度。今天，您是想针对具体的皮肤问题进行深度咨询，还是希望通过最新的扫描数据来优化您的护肤方案？`,
         timestamp: Date.now(),
         options: isNewUser 
           ? ["开始扫描", "了解 App 功能"] 
@@ -172,7 +172,7 @@ const MentorView: React.FC<MentorViewProps> = ({ isNewUser, lastReport, onNaviga
             <img 
               src={MENTOR_AVATAR} 
               className="w-10 h-10 lg:w-12 lg:h-12 rounded-lg object-cover shadow-lg border-2 border-white"
-              alt="LUMSUE"
+              alt="Éclat"
             />
             <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 border-2 border-white rounded-full"></div>
           </div>

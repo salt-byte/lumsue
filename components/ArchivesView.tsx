@@ -89,7 +89,7 @@ const ArchivesView: React.FC<ArchivesViewProps> = ({ reports, onViewReport, onDe
       <div className="mt-20 flex flex-col items-center gap-4 opacity-20">
         <Sparkles size={24} className="text-[#AF9B60]" />
         <div className="w-24 h-px bg-[#AF9B60]"></div>
-        <p className="text-[10px] uppercase tracking-[0.5em] text-[#AF9B60] font-medium">LUMSUE Aesthetics</p>
+        <p className="text-[10px] uppercase tracking-[0.5em] text-[#AF9B60] font-medium">Éclat Aesthetics</p>
       </div>
     </div>
   );

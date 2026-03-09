@@ -247,7 +247,7 @@ app.post('/api/analyze', async (req, res) => {
   try {
     const ai = getGeminiClient();
 
-    const systemInstruction = `你是 LUMSUE 实验室的首席 AI 皮肤科医师，专注临床级多光谱面部分析。
+    const systemInstruction = `你是 Éclat 实验室的首席 AI 皮肤科医师，专注临床级多光谱面部分析。
 
 【核心要求】
 ⚠️ 所有文字字段（analysis、clinicalNote、description、name、label、cause、suggestion、severity、type、areas 数组内容、skincareRoutine 步骤、matchReason 等）必须全部用简体中文输出，禁止使用英文。
@@ -278,7 +278,7 @@ app.post('/api/analyze', async (req, res) => {
       contents: [
         {
           parts: [
-            { text: "请对这张面部照片进行高精度临床级皮肤分析，生成 LUMSUE 实验室专属报告。所有文字内容必须用中文。" },
+            { text: "请对这张面部照片进行高精度临床级皮肤分析，生成 Éclat 实验室专属报告。所有文字内容必须用中文。" },
             { inlineData: { data: image, mimeType: 'image/jpeg' } }
           ]
         }
@@ -343,7 +343,7 @@ app.post('/api/mentor/chat', async (req, res) => {
       屏障健康度评分：${lastReport.metrics?.barrier?.score}。`;
     }
 
-    const systemInstruction = `你是一位顶级皮肤科专家级别的护肤导师（Skin Mentor），名叫 LUMSUE。
+    const systemInstruction = `你是一位顶级皮肤科专家级别的护肤导师（Skin Mentor），名叫 Éclat。
     你的目标是通过专业的对话，精准诊断用户的皮肤问题，提供深度的皮肤学知识，并仅在必要时引导用户使用 App 功能。
 
     上下文信息：
@@ -408,7 +408,7 @@ app.post('/api/mentor/chat', async (req, res) => {
 
 // ─── 启动服务 ─────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
-  console.log(`\n🌿 LUMSUE 后端服务已启动`);
+  console.log(`\n🌿 Éclat 后端服务已启动`);
   console.log(`   地址：http://localhost:${PORT}`);
   console.log(`   接口：POST /api/analyze`);
   console.log(`         POST /api/mentor/chat`);
