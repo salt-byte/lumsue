@@ -10,7 +10,13 @@ interface LoginViewProps {
 type AuthMode = 'login' | 'signup';
 
 const LoginView: React.FC<LoginViewProps> = ({ onEnter }) => {
+  const [step, setStep] = useState<'intro' | 'login'>('intro');
   const [authMode, setAuthMode] = useState<AuthMode>('login');
+
+  useEffect(() => {
+    const timer = setTimeout(() => setStep('login'), 2500);
+    return () => clearTimeout(timer);
+  }, []);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -61,37 +67,40 @@ const LoginView: React.FC<LoginViewProps> = ({ onEnter }) => {
       <div className="absolute top-[-20%] right-[-10%] w-[70vw] h-[70vw] bg-[#FDE2E4] rounded-full blur-[160px] opacity-70" />
 
       <div className="container max-w-7xl mx-auto px-6 lg:px-16 relative z-10 py-12 lg:py-0">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-0 items-center">
+        <div className={`grid grid-cols-1 ${step === 'login' ? 'lg:grid-cols-12' : 'lg:grid-cols-1'} gap-10 lg:gap-0 items-center transition-all duration-1000 ease-in-out`}>
 
           {/* 左侧品牌文字 */}
           <motion.div
-            className="lg:col-span-7 lg:pr-24 lg:text-left flex flex-col justify-center space-y-8 lg:space-y-16 text-center"
+            layout
+            className={`${step === 'login' ? 'lg:col-span-7 lg:pr-24 lg:text-left' : 'lg:col-span-12 text-center'} flex flex-col justify-center space-y-8 lg:space-y-16 text-center transition-all duration-1000 ease-in-out`}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1 }}
           >
             <div className="space-y-6 lg:space-y-10">
-              <div className="flex items-center justify-center lg:justify-start gap-3 lg:gap-4 text-[#AF9B60]">
+              <div className={`flex items-center justify-center ${step === 'login' ? 'lg:justify-start' : 'lg:justify-center'} gap-3 lg:gap-4 text-[#AF9B60] transition-all duration-1000`}>
                 <Sparkles size={24} strokeWidth={1} />
                 <span className="text-xs lg:text-sm uppercase tracking-[0.4em] lg:tracking-[0.6em] font-light text-[#2D2422]">光彩艺术</span>
               </div>
-              <div className="flex flex-col items-center lg:items-start">
+              <div className={`flex flex-col items-center ${step === 'login' ? 'lg:items-start' : 'lg:items-center'}`}>
                 <h1 className="text-6xl md:text-8xl lg:text-[10rem] serif-heading leading-tight lg:leading-[1] text-[#2D2422]">
                   <span className="text-[#E29595] italic font-normal">LUMSUE</span>
                 </h1>
-                <div className="flex items-center justify-center lg:justify-start gap-4 lg:gap-6 mt-4">
+                <div className={`flex items-center justify-center ${step === 'login' ? 'lg:justify-start' : 'lg:justify-center'} gap-4 lg:gap-6 transition-all duration-1000 mt-4`}>
                   <div className="w-8 lg:w-12 h-[1px] bg-[#AF9B60]" />
                   <span className="text-[10px] lg:text-[12px] uppercase tracking-[0.4em] lg:tracking-[0.5em] font-medium text-[#2D2422]/60">AI 肤质实验室</span>
                   <div className="w-8 lg:w-12 h-[1px] bg-[#AF9B60]" />
                 </div>
               </div>
-              <p className="max-w-md mx-auto lg:mx-0 text-sm lg:text-base serif-heading italic font-light leading-relaxed text-[#2D2422]/80 lg:text-left text-center">
+              <p className={`max-w-md mx-auto ${step === 'login' ? 'lg:mx-0' : 'lg:mx-auto'} text-sm lg:text-base serif-heading italic font-light leading-relaxed text-[#2D2422]/80 ${step === 'login' ? 'lg:text-left' : 'text-center'} transition-all duration-1000`}>
                 AI 驱动的专业肤质检测与个性化护肤方案。
               </p>
             </div>
           </motion.div>
 
           {/* 右侧登录卡片 */}
+          <AnimatePresence>
+          {step === 'login' && (
           <motion.div
             initial={{ opacity: 0, x: 50, scale: 0.95 }}
             animate={{ opacity: 1, x: 0, scale: 1 }}
@@ -224,6 +233,8 @@ const LoginView: React.FC<LoginViewProps> = ({ onEnter }) => {
               </div>
             </div>
           </motion.div>
+          )}
+          </AnimatePresence>
         </div>
       </div>
 
