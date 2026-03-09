@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Wind, Lightbulb, Music, ArrowRight, Sparkles } from 'lucide-react';
 
 interface PrepViewProps {
@@ -68,8 +68,24 @@ const PrepView: React.FC<PrepViewProps> = ({ onConfirm, onCancel }) => {
                 <Music size={16} className="md:w-[18px] md:h-[18px]" />
                 <span className="text-[9px] md:text-[10px] font-bold tracking-widest uppercase">音频调谐 / Audio</span>
               </div>
-              <div className="p-4 md:p-6 bg-white/40 rounded-2xl md:rounded-3xl border border-white/50 italic text-[9px] md:text-[10px] text-[#3C2A21]/40 leading-relaxed">
-                正在播放: "Silken Horizon" - 实验室定制白噪音。已开启空间降噪模式。
+              <div className="p-4 md:p-6 bg-white/40 rounded-2xl md:rounded-3xl border border-white/50 flex items-center gap-4">
+                {/* 音频波形动画 */}
+                <div className="flex items-end gap-[3px] h-8 shrink-0">
+                  {[0.4, 0.7, 1, 0.6, 0.9, 0.5, 0.8, 0.3, 0.7, 1, 0.5, 0.6].map((h, i) => (
+                    <div
+                      key={i}
+                      className="w-[3px] rounded-full bg-[#AF9B60]/60"
+                      style={{
+                        height: `${h * 100}%`,
+                        animation: `audioBar 1.2s ease-in-out ${i * 0.1}s infinite alternate`
+                      }}
+                    />
+                  ))}
+                </div>
+                <div>
+                  <p className="text-[10px] font-medium text-[#3C2A21]/70 not-italic">"Silken Horizon"</p>
+                  <p className="text-[9px] text-[#3C2A21]/40 italic mt-0.5">实验室定制白噪音 · 空间降噪模式</p>
+                </div>
               </div>
            </div>
         </div>
