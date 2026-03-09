@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: lumsue-server
+    runtime: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: GEMINI_API_KEY
+        sync: false          # 在 Render 控制台手动填写
+      - key: FRONTEND_URL
+        sync: false          # 填写 Vercel 前端地址，如 https://lumsue.vercel.app
+    healthCheckPath: /api/health

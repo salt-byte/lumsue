@@ -1,7 +1,8 @@
 import { SkinReport } from "../types";
 
-// 后端服务地址，通过 Vite proxy 转发，无需改动
-const API_BASE = '/api';
+// 开发环境：使用 Vite proxy（/api → localhost:3001）
+// 生产环境：VITE_API_BASE_URL 指向 Render 后端，如 https://lumsue.onrender.com/api
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
 /**
  * 发送面部图片到后端进行肤质分析

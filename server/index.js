@@ -2,9 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import { GoogleGenAI, Type } from '@google/genai';
 import { randomUUID } from 'crypto';
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -13,8 +10,25 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // ─── 中间件 ───────────────────────────────────────────────────────────────────
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  // 生产环境：从环境变量读取前端地址（支持多个，逗号分隔）
+  ...(process.env.FRONTEND_URL
+    ? process.env.FRONTEND_URL.split(',').map(u => u.trim())
+    : [])
+];
+
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  origin: (origin, callback) => {
+    // 允许无 origin 的请求（如服务端直接调用、Render health check）
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS: 不允许的来源 ${origin}`));
+    }
+  },
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type']
 }));
