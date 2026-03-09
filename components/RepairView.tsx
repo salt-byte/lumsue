@@ -253,11 +253,11 @@ const RepairView: React.FC<RepairViewProps> = ({ lastReport, language }) => {
               </div>
               <div>
                 <h3 className="text-2xl lg:text-3xl font-serif italic">商家入驻系统 <span className="text-xs lg:text-sm not-italic opacity-40 ml-2">Merchant Onboarding</span></h3>
-                <p className="text-[10px] lg:text-[12px] text-[#AF9B60] uppercase tracking-[0.4em] mt-1 font-medium">加入 Éclat 全球美学供应链</p>
+                <p className="text-[10px] lg:text-[12px] text-[#AF9B60] uppercase tracking-[0.4em] mt-1 font-medium">加入 Aura 全球美学供应链</p>
               </div>
             </div>
             <p className="text-sm lg:text-base text-slate-300 leading-relaxed font-serif-sc italic">
-              我们诚邀全球顶尖护肤品牌与专业美容机构入驻。通过 Éclat 的 AI 推荐引擎，将您的优质产品精准对接给最需要的用户。
+              我们诚邀全球顶尖护肤品牌与专业美容机构入驻。通过 Aura 的 AI 推荐引擎，将您的优质产品精准对接给最需要的用户。
             </p>
             <div className="flex flex-wrap gap-8">
               <div className="flex items-center gap-3">

@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: eclat-server
+    name: aura-server
     runtime: node
     rootDir: server
     buildCommand: npm install

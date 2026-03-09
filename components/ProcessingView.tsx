@@ -253,7 +253,7 @@ const ProcessingView: React.FC<ProcessingViewProps> = ({ base64Image, onComplete
       <div className="absolute top-8 left-0 right-0 flex flex-col items-center gap-2 z-10">
         <div className="flex items-center gap-2 text-[#D4AF37]/60">
           <div className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] animate-pulse" />
-          <span className="text-[9px] font-bold uppercase tracking-[0.5em]">Éclat 临床影像实验室</span>
+          <span className="text-[9px] font-bold uppercase tracking-[0.5em]">Aura 临床影像实验室</span>
           <div className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] animate-pulse" />
         </div>
         <h2 className="text-2xl font-serif italic text-white/80">多光谱皮肤分析系统</h2>

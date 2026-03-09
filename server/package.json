@@ -1,8 +1,8 @@
 {
-  "name": "eclat-server",
+  "name": "aura-server",
   "version": "1.0.0",
   "type": "module",
-  "description": "Éclat 肤质检测后端服务",
+  "description": "Aura 肤质检测后端服务",
   "main": "index.js",
   "scripts": {
     "dev": "node --watch index.js",

@@ -84,7 +84,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onEnter }) => {
               </div>
               <div className={`flex flex-col items-center ${step === 'login' ? 'lg:items-start' : 'lg:items-center'}`}>
                 <h1 className="text-6xl md:text-8xl lg:text-[10rem] serif-heading leading-tight lg:leading-[1] text-[#2D2422]">
-                  <span className="text-[#E29595] italic font-normal">Éclat</span>
+                  <span className="text-[#E29595] italic font-normal">Aura</span>
                 </h1>
                 <div className={`flex items-center justify-center ${step === 'login' ? 'lg:justify-start' : 'lg:justify-center'} gap-4 lg:gap-6 transition-all duration-1000 mt-4`}>
                   <div className="w-8 lg:w-12 h-[1px] bg-[#AF9B60]" />
@@ -240,7 +240,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onEnter }) => {
 
       <footer className="fixed bottom-6 lg:bottom-10 left-0 right-0 text-center z-10 px-6">
         <p className="text-[8px] lg:text-[9px] uppercase tracking-[0.3em] lg:tracking-[0.5em] text-[#2D2422]/40 font-medium">
-          © 2026 — TIANJI CLOUD TECHNOLOGY — ÉCLAT AI LAB
+          © 2026 — TIANJI CLOUD TECHNOLOGY — AURA AI LAB
         </p>
       </footer>
     </div>
