@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, SkinReport } from './types';
 import { analyzeSkin } from './services/geminiService';
-import { supabase, fetchReports, saveReport, signOut } from './services/supabaseService';
+import { supabase, fetchReports, saveReport, signOut, isSupabaseConfigured } from './services/supabaseService';
 import { Sparkles, LayoutDashboard, History, Scan, Sun, Bell, Heart, MessageSquare, Zap, Languages, LogOut, UserRound } from 'lucide-react';
 import { Language, translations } from './src/i18n';
 import type { User } from '@supabase/supabase-js';
@@ -166,6 +166,12 @@ const App: React.FC = () => {
 
   // ─── Supabase Auth 监听 ──────────────────────────────────────────────────────
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      // 未配置 Supabase 时直接显示登录页（游客模式可正常使用）
+      setAuthLoading(false);
+      return;
+    }
+
     // 初始检查是否已登录
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
@@ -175,7 +181,7 @@ const App: React.FC = () => {
         setHasConsulted(true);
       }
       setAuthLoading(false);
-    });
+    }).catch(() => setAuthLoading(false));
 
     // 监听登录/登出变化（含 OAuth 回调）
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {

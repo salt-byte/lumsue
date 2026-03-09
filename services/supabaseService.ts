@@ -1,10 +1,16 @@
 import { createClient } from '@supabase/supabase-js';
 import { SkinReport } from '../types';
 
-const supabaseUrl  = import.meta.env.VITE_SUPABASE_URL  as string;
-const supabaseKey  = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+// 环境变量缺失时创建一个占位客户端，避免白屏崩溃
+export const supabase = createClient(
+  supabaseUrl  || 'https://placeholder.supabase.co',
+  supabaseKey  || 'placeholder-key'
+);
+
+export const isSupabaseConfigured = !!(supabaseUrl && supabaseKey);
 
 // ─── Auth ────────────────────────────────────────────────────────────────────
 
