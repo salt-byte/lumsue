@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowRight, Sparkles, Mail, Lock, Eye, EyeOff, Chrome, UserRound } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { signIn, signUp, signInWithGoogle } from '../services/supabaseService';
