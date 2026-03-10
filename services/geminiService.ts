@@ -61,7 +61,7 @@ export async function analyzeSkin(imageBase64: string): Promise<SkinReport> {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ image: compressed }),
       },
-      90_000 // Pro 模型最长可达 60s，留足余量
+      120_000 // Pro 模型较慢，留足重试空间（70s×2 + 3s延迟）
     );
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));

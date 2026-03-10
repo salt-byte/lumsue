@@ -35,7 +35,7 @@ app.use(cors({
 app.use(express.json({ limit: '20mb' })); // base64 图片约 5-10MB
 
 // ─── Gemini 配置 ──────────────────────────────────────────────────────────────
-const GEMINI_MODEL = 'gemini-2.5-pro-preview-05-06';
+const GEMINI_MODEL = 'gemini-3.1-pro-preview';
 
 // ─── 百度 AI 配置 ─────────────────────────────────────────────────────────────
 const BAIDU_TOKEN_URL = 'https://aip.baidubce.com/oauth/2.0/token';
@@ -343,7 +343,7 @@ app.post('/api/analyze', async (req, res) => {
     // 带超时的 Gemini 调用（最多重试一次）
     const callGemini = () => {
       const timeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Gemini 响应超时')), 55000)
+        setTimeout(() => reject(new Error('Gemini 响应超时')), 70000)
       );
       const call = ai.models.generateContent({
         model: GEMINI_MODEL,
