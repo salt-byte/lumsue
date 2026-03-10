@@ -439,8 +439,13 @@ const App: React.FC = () => {
     setCurrentView(View.Loading);
     try {
       const report = await analysisPromise;
+      // 防护：Flash 模型偶尔返回结构不完整的报告，基本字段缺失则报错
+      if (!report || typeof report.totalScore !== 'number' || !report.metrics) {
+        throw new Error('报告数据不完整');
+      }
       setReports(prev => [report, ...prev]);
       setCurrentReport(report);
+      setStreamPhase('');
       // 真实用户：保存到 Supabase
       if (authUser && authUser !== 'guest') {
         saveReport((authUser as User).id, report).catch(console.error);

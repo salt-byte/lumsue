@@ -198,10 +198,16 @@ const ScannerView: React.FC<ScannerViewProps> = ({ onCapture, onCancel }) => {
 
         if (detection) {
           faceDetected = true;
-          const { width: fW } = detection.box;
+          const { x, width: fW, height: fH } = detection.box;
           const ratio = fW / video.videoWidth;
           faceTooClose = ratio > FACE_MAX_RATIO;
-          faceInRange = ratio >= FACE_MIN_RATIO && ratio <= FACE_MAX_RATIO;
+
+          // 脸部中心必须在视频水平中心 ±25% 范围内
+          const faceCenterX = x + fW / 2;
+          const videoCenterX = video.videoWidth / 2;
+          const centered = Math.abs(faceCenterX - videoCenterX) < video.videoWidth * 0.25;
+
+          faceInRange = ratio >= FACE_MIN_RATIO && ratio <= FACE_MAX_RATIO && centered;
         }
       } catch {
         // 检测出错时跳过本帧
@@ -218,8 +224,8 @@ const ScannerView: React.FC<ScannerViewProps> = ({ onCapture, onCancel }) => {
         newStatus = 'too_close';
       } else if (!brightnessOk) {
         newStatus = 'low_light';
-      } else if (!faceInRange) {
-        newStatus = 'too_far';
+      } else if (!faceInRange && !faceTooClose) {
+        newStatus = 'too_far'; // 包含距离太远或脸没居中
       } else {
         newStatus = 'aligning';
       }
@@ -230,7 +236,7 @@ const ScannerView: React.FC<ScannerViewProps> = ({ onCapture, onCancel }) => {
         // 状态变化时播报语音
         if (newStatus === 'no_face')   speak('请将脸部对准椭圆框');
         if (newStatus === 'too_close') speak('距离太近，请稍微后退一点');
-        if (newStatus === 'too_far')   speak('请靠近镜头一点');
+        if (newStatus === 'too_far')   speak('请将脸移到画面中央，并靠近镜头');
         if (newStatus === 'low_light') speak('光线不足，请移动到明亮的地方');
         if (newStatus === 'aligning')  speak('非常好，请保持不动');
         if (newStatus !== 'aligning') {
