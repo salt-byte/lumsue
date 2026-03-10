@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, SkinReport } from './types';
 import { analyzeSkin, warmUpServer } from './services/geminiService';
+import * as faceapi from 'face-api.js';
 import { supabase, fetchReports, saveReport, signOut, isSupabaseConfigured } from './services/supabaseService';
 import { Sparkles, LayoutDashboard, History, Scan, Sun, Bell, Heart, MessageSquare, Zap, Languages, LogOut, UserRound } from 'lucide-react';
 import { Language, translations } from './src/i18n';
@@ -166,6 +167,11 @@ const App: React.FC = () => {
   const toggleLanguage = () => {
     setLanguage(prev => prev === 'zh' ? 'en' : 'zh');
   };
+
+  // ─── 预加载 face-api 模型（App 启动时就开始，进扫描页时已就绪）──────────────
+  useEffect(() => {
+    faceapi.nets.tinyFaceDetector.loadFromUri('/models').catch(() => {});
+  }, []);
 
   // ─── Supabase Auth 监听 ──────────────────────────────────────────────────────
   useEffect(() => {

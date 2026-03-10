@@ -67,14 +67,16 @@ const ScannerView: React.FC<ScannerViewProps> = ({ onCapture, onCancel }) => {
     } catch {}
   }, [stream]);
 
-  // ─── 加载模型 ──────────────────────────────────────────────────────────────
+  // ─── 检查模型是否已加载（App 启动时预加载，通常这里直接就绪）──────────────
   useEffect(() => {
+    if (faceapi.nets.tinyFaceDetector.isLoaded) {
+      setModelLoaded(true);
+      return;
+    }
+    // 极少数情况模型还没加载完，继续等
     faceapi.nets.tinyFaceDetector.loadFromUri('/models')
       .then(() => setModelLoaded(true))
-      .catch(() => {
-        // 模型加载失败时 fallback：假设有脸，继续流程
-        setModelLoaded(true);
-      });
+      .catch(() => setModelLoaded(true)); // 失败也继续
   }, []);
 
   // ─── 摄像头初始化 ──────────────────────────────────────────────────────────
