@@ -27,19 +27,41 @@ async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: nu
 }
 
 /**
+ * 压缩图片到最大 1280px 宽，减少传输体积（快约 2-3 倍）
+ */
+async function compressImage(base64: string, maxWidth = 1280, quality = 0.85): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxWidth / img.width);
+      const canvas = document.createElement('canvas');
+      canvas.width  = Math.round(img.width  * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL('image/jpeg', quality).split(',')[1]);
+    };
+    img.onerror = () => resolve(base64); // 失败时用原图
+    img.src = `data:image/jpeg;base64,${base64}`;
+  });
+}
+
+/**
  * 发送面部图片到后端进行肤质分析
  * 自动重试一次（应对 Render 冷启动 / Gemini 偶发失败）
  */
 export async function analyzeSkin(imageBase64: string): Promise<SkinReport> {
+  // 压缩后再发送，减少传输和 Gemini 处理时间
+  const compressed = await compressImage(imageBase64);
+
   const request = async () => {
     const response = await fetchWithTimeout(
       `${API_BASE}/analyze`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: imageBase64 }),
+        body: JSON.stringify({ image: compressed }),
       },
-      90_000 // 90s：冷启动30s + Gemini分析最长50s
+      60_000 // Flash 模型 + 压缩图片，60s 足够
     );
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));

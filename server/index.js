@@ -35,7 +35,62 @@ app.use(cors({
 app.use(express.json({ limit: '20mb' })); // base64 图片约 5-10MB
 
 // ─── Gemini 配置 ──────────────────────────────────────────────────────────────
-const GEMINI_MODEL = 'gemini-3.1-pro-preview';
+// Flash 模型速度约为 Pro 的 3-5 倍，分析质量对肤质场景足够
+const GEMINI_MODEL = 'gemini-2.0-flash';
+
+// ─── 百度 AI 配置 ─────────────────────────────────────────────────────────────
+const BAIDU_TOKEN_URL = 'https://aip.baidubce.com/oauth/2.0/token';
+const BAIDU_FACE_URL  = 'https://aip.baidubce.com/rest/2.0/face/v3/detect';
+
+let _baiduToken  = null;
+let _baiduExpiry = 0;
+
+async function getBaiduToken() {
+  if (_baiduToken && Date.now() < _baiduExpiry) return _baiduToken;
+  const apiKey    = process.env.BAIDU_API_KEY;
+  const secretKey = process.env.BAIDU_SECRET_KEY;
+  if (!apiKey || !secretKey) return null;
+  try {
+    const res  = await fetch(`${BAIDU_TOKEN_URL}?grant_type=client_credentials&client_id=${apiKey}&client_secret=${secretKey}`);
+    const data = await res.json();
+    _baiduToken  = data.access_token;
+    _baiduExpiry = Date.now() + (data.expires_in - 300) * 1000; // 提前 5 分钟刷新
+    return _baiduToken;
+  } catch { return null; }
+}
+
+// 百度人脸检测：返回肤质类型、年龄等结构化数据（约 0.3-0.8s）
+async function baiduSkinDetect(imageBase64) {
+  try {
+    const token = await getBaiduToken();
+    if (!token) return null;
+
+    const body = new URLSearchParams({
+      image:      imageBase64,
+      image_type: 'BASE64',
+      face_field: 'skin_type,age,beauty,complexion'
+    });
+
+    const res  = await fetch(`${BAIDU_FACE_URL}?access_token=${token}`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body:    body.toString(),
+      signal:  AbortSignal.timeout(5000)
+    });
+    const data = await res.json();
+    if (data.error_code || !data.result?.face_list?.[0]) return null;
+
+    const face = data.result.face_list[0];
+    const skinTypeMap = { 0: '油性', 1: '干性', 2: '中性', 3: '混合性' };
+    return {
+      skinType:    skinTypeMap[face.skin_type?.type] ?? '混合性',
+      skinProb:    (face.skin_type?.probability * 100).toFixed(0),
+      age:         face.age,
+      beauty:      face.beauty,
+      complexion:  face.complexion?.type  // 0=白皙 1=偏白 2=中等 3=偏黑
+    };
+  } catch { return null; }
+}
 
 function getGeminiClient() {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -247,7 +302,20 @@ app.post('/api/analyze', async (req, res) => {
   try {
     const ai = getGeminiClient();
 
-    const systemInstruction = `你是 Aura 实验室的首席 AI 皮肤科医师，专注临床级多光谱面部分析。
+    // ── 百度和 Gemini 准备并行执行 ─────────────────────────────────────────────
+    // 百度约 0.5s 返回结构化皮肤数据，Gemini 同步开始准备
+    const [baiduResult] = await Promise.allSettled([
+      baiduSkinDetect(image)
+    ]);
+    const baidu = baiduResult.status === 'fulfilled' ? baiduResult.value : null;
+    console.log('[/api/analyze] 百度检测结果:', baidu ?? '未返回（已忽略）');
+
+    // 百度数据注入 prompt：让 Gemini 基于已知基础信息做深度分析，减少猜测时间
+    const baiduContext = baidu
+      ? `\n【参考数据·来自百度AI人脸检测，置信度 ${baidu.skinProb}%】\n- 基础肤质：${baidu.skinType}\n- 估算年龄：${baidu.age} 岁\n- 面部美感分：${baidu.beauty}/100\n请以此为参考基准进行深度临床分析，你的分析优先级高于参考数据。`
+      : '';
+
+    const systemInstruction = `你是 Aura 实验室的首席 AI 皮肤科医师，专注临床级多光谱面部分析。${baiduContext}
 
 【核心要求】
 ⚠️ 所有文字字段（analysis、clinicalNote、description、name、label、cause、suggestion、severity、type、areas 数组内容、skincareRoutine 步骤、matchReason 等）必须全部用简体中文输出，禁止使用英文。
@@ -259,31 +327,31 @@ app.post('/api/analyze', async (req, res) => {
    - 分区出油（脸颊/T区/下巴，0-100）
    - 肤色色调（冷色调/中性色调/暖色调）
    - 光滑度比喻（剥壳鸡蛋/蛋壳/蛋黄/煎蛋）
-   - 黑眼圈：分型（色素型/血管型/结构型混合）及各型占比
-   - 痤疮：等级(0-5)、活跃数量、中文描述（如"轻度粉刺为主"）
-   - 黑头：数量、中文严重程度（如"少量"/"中等"/"较多"）
-   - 毛孔：等级（如"细腻"/"轻度扩张"/"明显扩张"）、中文描述
-   - 泛红：严重程度（如"轻度"/"中度"）、中文区域描述（如"两侧鼻翼"）
+   - 黑眼圈：分型及各型占比
+   - 痤疮：等级(0-5)、活跃数量、中文描述
+   - 黑头：数量、严重程度
+   - 毛孔：等级、中文描述
+   - 泛红：严重程度、中文区域描述
 4. 五区评分（眼周/鼻部/脸颊/唇周/额头，0-100）
-5. 11项临床维度（水分/油脂/光滑/毛孔/均匀/弹性/敏感/光泽/屏障/糖化/炎症），每项包括评分、中文标签、中文分析说明（2-3句话）、可选临床批注
-6. Baumann 肤质分型：code（如 OSPT）、中文名称（如"油性敏感色素型紧致肌"）、中文详细描述（3-4句话解释该肤质特点及日常注意事项）
-7. 皮肤主要问题（3-5个），每项包含：中文标题、中文成因、中文建议、活性成分列表（可用成分英文名）
-8. 定制护肤流程（5-7个步骤，全中文）
-9. 推荐产品（3-4个，可推荐国际或国产品牌，matchReason 用中文）
+5. 11项临床维度（水分/油脂/光滑/毛孔/均匀/弹性/敏感/光泽/屏障/糖化/炎症），每项含评分、中文标签、中文分析说明（2句话）
+6. Baumann 肤质分型：code、中文名称、中文描述（2-3句）
+7. 皮肤主要问题（3-5个）：中文标题、成因、建议、活性成分
+8. 定制护肤流程（5-7步，全中文）
+9. 推荐产品（3个，matchReason 用中文）
 
-【Baumann分型说明】代码含义：O=油性/D=干性，S=敏感/R=耐受，P=色素型/N=非色素型，W=皱纹型/T=紧致型。示例：OSPT=油性敏感色素型紧致型。`;
+【Baumann分型】O=油性/D=干性，S=敏感/R=耐受，P=色素型/N=非色素型，W=皱纹型/T=紧致型。`;
 
     // 带超时的 Gemini 调用（最多重试一次）
     const callGemini = () => {
       const timeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Gemini 响应超时')), 55000)
+        setTimeout(() => reject(new Error('Gemini 响应超时')), 45000)
       );
       const call = ai.models.generateContent({
         model: GEMINI_MODEL,
         contents: [
           {
             parts: [
-              { text: "请对这张面部照片进行高精度临床级皮肤分析，生成 Aura 实验室专属报告。所有文字内容必须用中文。" },
+              { text: "请对这张面部照片进行临床级皮肤分析，生成 Aura 实验室专属报告。所有文字内容必须用中文。" },
               { inlineData: { data: image, mimeType: 'image/jpeg' } }
             ]
           }
