@@ -1,63 +1,91 @@
 import { SkinReport } from "../types";
 
-// 开发环境：使用 Vite proxy（/api → localhost:3001）
-// 生产环境：VITE_API_BASE_URL 指向 Render 后端，如 https://lumsue.onrender.com/api
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
+
+// 提前唤醒 Render 服务器（避免冷启动导致分析超时）
+export async function warmUpServer(): Promise<void> {
+  try {
+    await fetch(`${API_BASE}/health`, { method: 'GET' });
+  } catch {
+    // 静默失败，唤醒失败不影响后续流程
+  }
+}
+
+// fetch 带超时的封装
+async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(id);
+    return res;
+  } catch (err: any) {
+    clearTimeout(id);
+    if (err.name === 'AbortError') throw new Error('请求超时，请稍后重试');
+    throw err;
+  }
+}
 
 /**
  * 发送面部图片到后端进行肤质分析
- * @param imageBase64 - base64 编码的 JPEG 图片（不含 data URL 前缀）
+ * 自动重试一次（应对 Render 冷启动 / Gemini 偶发失败）
  */
 export async function analyzeSkin(imageBase64: string): Promise<SkinReport> {
-  const response = await fetch(`${API_BASE}/analyze`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ image: imageBase64 })
-  });
+  const request = async () => {
+    const response = await fetchWithTimeout(
+      `${API_BASE}/analyze`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: imageBase64 }),
+      },
+      90_000 // 90s：冷启动30s + Gemini分析最长50s
+    );
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || `分析请求失败（HTTP ${response.status}）`);
+    }
+    return response.json() as Promise<SkinReport>;
+  };
 
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.error || `肤质分析请求失败（HTTP ${response.status}）`);
+  try {
+    return await request();
+  } catch (firstErr: any) {
+    // 第一次失败后等 3s 自动重试一次
+    await new Promise(r => setTimeout(r, 3000));
+    try {
+      return await request();
+    } catch (secondErr: any) {
+      throw new Error(secondErr.message || '肤质分析失败，请确保光线充足并重试');
+    }
   }
-
-  return response.json() as Promise<SkinReport>;
 }
 
 /**
  * 与护肤导师进行多轮对话
- * @param messages   - 对话历史
- * @param lastReport - 可选，上次肤质检测报告（用于个性化上下文）
  */
 export async function mentorChat(
   messages: { role: 'user' | 'assistant'; content: string }[],
   lastReport?: SkinReport | null
 ): Promise<string> {
-  const controller = new AbortController();
-  const timeoutId  = setTimeout(() => controller.abort(), 35000);
-
   try {
-    const response = await fetch(`${API_BASE}/mentor/chat`, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ messages, lastReport: lastReport ?? null }),
-      signal:  controller.signal
-    });
-
-    clearTimeout(timeoutId);
-
+    const response = await fetchWithTimeout(
+      `${API_BASE}/mentor/chat`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages, lastReport: lastReport ?? null }),
+      },
+      40_000
+    );
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
       throw new Error(err.error || `导师对话请求失败（HTTP ${response.status}）`);
     }
-
     const data = await response.json();
     return data.reply || '抱歉，我现在无法回应，请稍后再试。';
   } catch (error: any) {
-    clearTimeout(timeoutId);
-
-    if (error.name === 'AbortError') {
-      throw new Error('请求超时，请检查网络连接后重试。');
-    }
+    if (error.message?.includes('超时')) throw new Error('网络响应较慢，请稍后重试。');
     throw error;
   }
 }

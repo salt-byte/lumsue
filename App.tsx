@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, SkinReport } from './types';
-import { analyzeSkin } from './services/geminiService';
+import { analyzeSkin, warmUpServer } from './services/geminiService';
 import { supabase, fetchReports, saveReport, signOut, isSupabaseConfigured } from './services/supabaseService';
 import { Sparkles, LayoutDashboard, History, Scan, Sun, Bell, Heart, MessageSquare, Zap, Languages, LogOut, UserRound } from 'lucide-react';
 import { Language, translations } from './src/i18n';
@@ -395,6 +395,7 @@ const App: React.FC = () => {
       setCurrentView(View.Mentor);
       return;
     }
+    warmUpServer(); // 提前唤醒 Render，减少冷启动超时
     setCurrentView(View.Prep);
   };
   const handleViewHistory = () => setCurrentView(View.History);

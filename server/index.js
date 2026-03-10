@@ -273,23 +273,39 @@ app.post('/api/analyze', async (req, res) => {
 
 【Baumann分型说明】代码含义：O=油性/D=干性，S=敏感/R=耐受，P=色素型/N=非色素型，W=皱纹型/T=紧致型。示例：OSPT=油性敏感色素型紧致型。`;
 
-    const response = await ai.models.generateContent({
-      model: GEMINI_MODEL,
-      contents: [
-        {
-          parts: [
-            { text: "请对这张面部照片进行高精度临床级皮肤分析，生成 Aura 实验室专属报告。所有文字内容必须用中文。" },
-            { inlineData: { data: image, mimeType: 'image/jpeg' } }
-          ]
+    // 带超时的 Gemini 调用（最多重试一次）
+    const callGemini = () => {
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Gemini 响应超时')), 55000)
+      );
+      const call = ai.models.generateContent({
+        model: GEMINI_MODEL,
+        contents: [
+          {
+            parts: [
+              { text: "请对这张面部照片进行高精度临床级皮肤分析，生成 Aura 实验室专属报告。所有文字内容必须用中文。" },
+              { inlineData: { data: image, mimeType: 'image/jpeg' } }
+            ]
+          }
+        ],
+        config: {
+          systemInstruction,
+          responseMimeType: 'application/json',
+          responseSchema: SKIN_ANALYSIS_SCHEMA,
+          temperature: 0.1
         }
-      ],
-      config: {
-        systemInstruction,
-        responseMimeType: 'application/json',
-        responseSchema: SKIN_ANALYSIS_SCHEMA,
-        temperature: 0.1
-      }
-    });
+      });
+      return Promise.race([call, timeout]);
+    };
+
+    let response;
+    try {
+      response = await callGemini();
+    } catch (firstErr) {
+      console.warn('[/api/analyze] 第一次调用失败，3s 后重试:', firstErr.message);
+      await new Promise(r => setTimeout(r, 3000));
+      response = await callGemini(); // 失败时抛出，由外层 catch 处理
+    }
 
     const rawJson = JSON.parse(response.text);
 
@@ -302,13 +318,16 @@ app.post('/api/analyze', async (req, res) => {
 
     res.json(skinReport);
   } catch (err) {
-    console.error('[/api/analyze] 错误:', err);
+    console.error('[/api/analyze] 错误:', err.message);
 
     if (err.message?.includes('GEMINI_API_KEY')) {
-      return res.status(500).json({ error: 'API 密钥未配置，请在 server/.env 中设置 GEMINI_API_KEY' });
+      return res.status(500).json({ error: 'API 密钥未配置' });
     }
     if (err.message?.includes('API key not valid')) {
-      return res.status(401).json({ error: 'Gemini API Key 无效，请检查配置' });
+      return res.status(401).json({ error: 'Gemini API Key 无效' });
+    }
+    if (err.message?.includes('超时') || err.message?.includes('timeout')) {
+      return res.status(504).json({ error: '分析超时，请稍后重试（服务器响应较慢）' });
     }
 
     res.status(500).json({ error: '肤质分析失败，请稍后重试', detail: err.message });
