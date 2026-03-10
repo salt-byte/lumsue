@@ -35,7 +35,7 @@ app.use(cors({
 app.use(express.json({ limit: '20mb' })); // base64 图片约 5-10MB
 
 // ─── Gemini 配置 ──────────────────────────────────────────────────────────────
-const GEMINI_MODEL = 'gemini-3.1-pro-preview';
+const GEMINI_MODEL = 'gemini-2.5-pro-preview-05-06';
 
 // ─── 百度 AI 配置 ─────────────────────────────────────────────────────────────
 const BAIDU_TOKEN_URL = 'https://aip.baidubce.com/oauth/2.0/token';
@@ -83,7 +83,7 @@ async function baiduSkinDetect(imageBase64) {
     const skinTypeMap = { 0: '油性', 1: '干性', 2: '中性', 3: '混合性' };
     return {
       skinType:    skinTypeMap[face.skin_type?.type] ?? '混合性',
-      skinProb:    (face.skin_type?.probability * 100).toFixed(0),
+      skinProb:    face.skin_type?.probability != null ? (face.skin_type.probability * 100).toFixed(0) : '未知',
       age:         face.age,
       beauty:      face.beauty,
       complexion:  face.complexion?.type  // 0=白皙 1=偏白 2=中等 3=偏黑
