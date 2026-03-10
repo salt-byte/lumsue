@@ -108,114 +108,96 @@ const ProcessingView: React.FC<ProcessingViewProps> = ({ base64Image, onComplete
       canvas.width = offscreen.width = img.width;
       canvas.height = offscreen.height = img.height;
       const W = img.width, H = img.height;
-
       const images: string[] = [];
 
-      // ── Step 1：临床影像增强 ─────────────────────────────────────────────
-      // S 曲线对比度 + 色温中性化 + 轻微锐化感（通过对比度实现）
+      // ── Step 1：临床影像增强（对比度+色温，保留原色）──────────────────────
       ctx.drawImage(img, 0, 0);
       const d1 = ctx.getImageData(0, 0, W, H);
       const p1 = d1.data;
       for (let i = 0; i < p1.length; i += 4) {
-        // S 曲线增强对比度
         const r = sCurve(p1[i], 1.6);
         const g = sCurve(p1[i + 1], 1.6);
         const b = sCurve(p1[i + 2], 1.6);
-        // 轻微提高饱和度 (HSL 调色)
         const [h, s, l] = rgbToHsl(r, g, b);
-        const [nr, ng, nb] = hslToRgb(h, Math.min(1, s * 1.25), l);
+        const [nr, ng, nb] = hslToRgb(h, Math.min(1, s * 1.2), l);
         p1[i] = nr; p1[i + 1] = ng; p1[i + 2] = nb;
       }
       ctx.putImageData(d1, 0, 0);
-      // 叠加一次高对比度 filter 增加锐利感
-      ctx.filter = 'contrast(1.15) brightness(1.05)';
+      ctx.filter = 'contrast(1.12) brightness(1.04)';
       ctx.drawImage(canvas, 0, 0);
       ctx.filter = 'none';
-      images.push(canvas.toDataURL('image/jpeg', 0.9));
+      images.push(canvas.toDataURL('image/jpeg', 0.92));
 
-      // ── Step 2：黑色素分布图 ─────────────────────────────────────────────
-      // 黑色素指数 = log(R/(B+1))，映射到琥珀/棕褐伪彩
+      // ── Step 2：色素分布图（白底+深色素点，参考 UV 暗沉图）────────────────
+      // 白色背景：亮区→奶白，暗区（色素）→深棕，对应"黑暗沉区域图"效果
       ctx.drawImage(img, 0, 0);
       const d2 = ctx.getImageData(0, 0, W, H);
       const p2 = d2.data;
       for (let i = 0; i < p2.length; i += 4) {
         const r = p2[i], g = p2[i + 1], b = p2[i + 2];
-        // 亮度作为基础
         const lum = r * 0.299 + g * 0.587 + b * 0.114;
-        // 黑色素指数：R/B 对比，对数拉伸
-        const mIdx = clamp(Math.log((r / (b + 1)) + 1) * 85 + lum * 0.15);
-        // 映射到暖色调：高黑色素=深棕，低黑色素=象牙白
-        p2[i]     = clamp(mIdx * 1.05);   // R: 暖橙
-        p2[i + 1] = clamp(mIdx * 0.72);   // G: 中等
-        p2[i + 2] = clamp(mIdx * 0.22);   // B: 压低 → 棕褐
+        // 极度提亮：非色素区域推向白色，色素区域保留为深色
+        const bright = clamp(lum * 1.9 + 30);
+        const spot = clamp(255 - bright); // 反转：暗斑 = 高色素
+        // 映射到奶白→深棕色阶
+        p2[i]     = clamp(255 - spot * 0.55); // R
+        p2[i + 1] = clamp(250 - spot * 0.72); // G
+        p2[i + 2] = clamp(240 - spot * 0.88); // B → 暖棕色调
       }
       ctx.putImageData(d2, 0, 0);
-      images.push(canvas.toDataURL('image/jpeg', 0.85));
+      images.push(canvas.toDataURL('image/jpeg', 0.88));
 
-      // ── Step 3：炎症热力图 ───────────────────────────────────────────────
-      // 血红蛋白/红斑指数：RBX 红光分离
-      // 使用冷→暖伪彩（蓝=无炎症，绿=轻度，黄=中度，红=高炎症）
+      // ── Step 3：红色区域图（白底+粉红炎症，对应"红色区域图"效果）──────────
+      // 计算血红蛋白/红斑指数，映射到粉红色在白色背景上
       ctx.drawImage(img, 0, 0);
       const d3 = ctx.getImageData(0, 0, W, H);
       const p3 = d3.data;
       for (let i = 0; i < p3.length; i += 4) {
         const r = p3[i], g = p3[i + 1], b = p3[i + 2];
-        // 红斑指数：突出 R 相对于 G/B 的超出量
-        const ery = clamp((r * 1.5 - g * 0.8 - b * 0.4) * 1.4);
-        // 冷暖色彩映射
-        let hr: number, hg: number, hb: number;
-        if (ery < 60) {
-          // 低 → 深蓝/紫
-          hr = clamp(ery * 0.5);
-          hg = clamp(ery * 0.3);
-          hb = clamp(80 + ery * 1.5);
-        } else if (ery < 140) {
-          // 中 → 蓝绿过渡
-          const t = (ery - 60) / 80;
-          hr = clamp(ery * t * 0.8);
-          hg = clamp(60 + t * 130);
-          hb = clamp(160 - t * 140);
-        } else if (ery < 210) {
-          // 中高 → 黄绿
-          const t = (ery - 140) / 70;
-          hr = clamp(100 + t * 155);
-          hg = clamp(200 - t * 30);
-          hb = clamp(20 - t * 10);
-        } else {
-          // 高 → 红
-          hr = 255;
-          hg = clamp(200 - (ery - 210) * 2.5);
-          hb = clamp(10 - (ery - 210) * 0.3);
-        }
-        p3[i] = hr; p3[i + 1] = hg; p3[i + 2] = hb;
+        // 红斑指数：R 超出 G/B 平均值的量
+        const ery = clamp(Math.max(0, r - (g + b) / 2) * 2.2);
+        // 白底粉红：ery=0→白，ery=255→深粉红
+        p3[i]     = 255;                       // R 保持高（白→红系）
+        p3[i + 1] = clamp(255 - ery * 0.88);  // G 下降 → 粉红
+        p3[i + 2] = clamp(255 - ery * 0.92);  // B 下降更多 → 红感
       }
       ctx.putImageData(d3, 0, 0);
-      images.push(canvas.toDataURL('image/jpeg', 0.85));
+      images.push(canvas.toDataURL('image/jpeg', 0.88));
 
-      // ── Step 4：皮肤纹理精绘 ─────────────────────────────────────────────
-      // 高频纹理提取：灰度 + 极限对比 + 亮度反转 → 毛孔/细纹可见
-      // 用两步：先做灰度高对比，再叠加边缘感
+      // ── Step 4：皮肤细节图（高对比黑白+分区标注）────────────────────────
+      // 灰度极高对比，可见毛孔/黑头，叠加 F/E/M1/M2 分区标注
       ctx.drawImage(img, 0, 0);
       const d4 = ctx.getImageData(0, 0, W, H);
       const p4 = d4.data;
-      // 第一步：灰度 + S 曲线极端对比
       for (let i = 0; i < p4.length; i += 4) {
         const lum = clamp(p4[i] * 0.299 + p4[i + 1] * 0.587 + p4[i + 2] * 0.114);
-        // 极端 S 曲线，让暗部更暗，亮部更亮，凸显纹理
-        const t = sCurve(lum, 2.2);
+        const t = sCurve(lum, 2.4);
         p4[i] = t; p4[i + 1] = t; p4[i + 2] = t;
       }
       ctx.putImageData(d4, 0, 0);
-      // 第二步：通过 CSS filter 叠加超高对比度，增强皮肤纹理深度
-      ctx.filter = 'contrast(4) brightness(0.85) invert(1)';
+      ctx.filter = 'contrast(3.5) brightness(0.88) invert(1)';
       ctx.drawImage(canvas, 0, 0);
       ctx.filter = 'none';
-      // 第三步：叠加淡蓝色调，模拟专业纹理分析仪的蓝光通道
-      ctx.globalCompositeOperation = 'screen';
-      ctx.fillStyle = 'rgba(80, 120, 180, 0.12)';
-      ctx.fillRect(0, 0, W, H);
-      ctx.globalCompositeOperation = 'source-over';
-      images.push(canvas.toDataURL('image/jpeg', 0.85));
+
+      // 分区标注（近似：根据图像尺寸估算脸部区域）
+      const zones = [
+        { label: 'F',  cx: W * 0.50, cy: H * 0.22, rx: W * 0.26, ry: H * 0.14, color: '#00E5A0' },
+        { label: 'E',  cx: W * 0.50, cy: H * 0.45, rx: W * 0.09, ry: H * 0.07, color: '#FF5A5A' },
+        { label: 'M1', cx: W * 0.24, cy: H * 0.60, rx: W * 0.16, ry: H * 0.14, color: '#00E5A0' },
+        { label: 'M2', cx: W * 0.76, cy: H * 0.60, rx: W * 0.16, ry: H * 0.14, color: '#00E5A0' },
+      ];
+      ctx.lineWidth = Math.max(2, W * 0.003);
+      const fontSize = Math.max(18, Math.round(W * 0.045));
+      ctx.font = `bold ${fontSize}px monospace`;
+      for (const z of zones) {
+        ctx.strokeStyle = z.color + 'CC';
+        ctx.beginPath();
+        ctx.ellipse(z.cx, z.cy, z.rx, z.ry, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = z.color;
+        ctx.fillText(z.label, z.cx - z.rx + fontSize * 0.3, z.cy - z.ry + fontSize * 1.1);
+      }
+      images.push(canvas.toDataURL('image/jpeg', 0.88));
 
       setProcessedImages(images);
       onProcessed?.(images);

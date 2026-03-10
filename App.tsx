@@ -155,6 +155,7 @@ const App: React.FC = () => {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [processedImages, setProcessedImages] = useState<string[]>([]);
   const [analysisPromise, setAnalysisPromise] = useState<Promise<SkinReport> | null>(null);
+  const [streamPhase, setStreamPhase] = useState<string>('');
   const [isNewUser, setIsNewUser] = useState(true);
   const [hasConsulted, setHasConsulted] = useState(false);
   const [language, setLanguage] = useState<Language>('zh');
@@ -428,7 +429,7 @@ const App: React.FC = () => {
   const handleScanComplete = (base64Image: string) => {
     setCapturedImage(base64Image);
     // 立即开始分析，与动画并行
-    setAnalysisPromise(analyzeSkin(base64Image));
+    setAnalysisPromise(analyzeSkin(base64Image, setStreamPhase));
     setCurrentView(View.Processing);
   };
 
@@ -560,7 +561,7 @@ const App: React.FC = () => {
 
         <div className={`flex-1 ${currentView === View.Mentor ? 'p-0' : 'p-6 lg:p-12'} max-w-7xl mx-auto w-full h-full flex flex-col`}>
            {currentView === View.Processing && capturedImage && <ProcessingView base64Image={capturedImage} onComplete={handleProcessingComplete} onProcessed={setProcessedImages} />}
-           {currentView === View.Loading && <LoadingView />}
+           {currentView === View.Loading && <LoadingView streamPhase={streamPhase} />}
            {currentView === View.Mentor && <MentorView isNewUser={isNewUser} lastReport={reports[0]} onNavigate={setCurrentView} onStartScan={handleStartScan} language={language} onToggleLanguage={toggleLanguage} />}
            {(currentView === View.History || currentView === View.Repair) && (
              <ArchivesView 

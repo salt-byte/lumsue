@@ -35,7 +35,7 @@ app.use(cors({
 app.use(express.json({ limit: '20mb' })); // base64 图片约 5-10MB
 
 // ─── Gemini 配置 ──────────────────────────────────────────────────────────────
-const GEMINI_MODEL = 'gemini-3.1-pro-preview';
+const GEMINI_MODEL = 'gemini-3-flash-preview';
 
 // ─── 百度 AI 配置 ─────────────────────────────────────────────────────────────
 const BAIDU_TOKEN_URL = 'https://aip.baidubce.com/oauth/2.0/token';
@@ -293,25 +293,31 @@ app.get('/api/health', (req, res) => {
 // Returns: SkinReport
 app.post('/api/analyze', async (req, res) => {
   const { image } = req.body;
-
   if (!image || typeof image !== 'string') {
     return res.status(400).json({ error: '请传入 base64 编码的图片（字段名：image）' });
   }
 
+  // ── SSE 响应头
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders();
+
+  const send = (data) => res.write(`data: ${JSON.stringify(data)}\n\n`);
+  // 每 15s 发一次心跳，防止 Render / 浏览器断连
+  const heartbeat = setInterval(() => res.write(': ping\n\n'), 15000);
+
   try {
     const ai = getGeminiClient();
 
-    // ── 百度和 Gemini 准备并行执行 ─────────────────────────────────────────────
-    // 百度约 0.5s 返回结构化皮肤数据，Gemini 同步开始准备
-    const [baiduResult] = await Promise.allSettled([
-      baiduSkinDetect(image)
-    ]);
-    const baidu = baiduResult.status === 'fulfilled' ? baiduResult.value : null;
+    // ── 百度检测
+    send({ type: 'progress', phase: '正在获取基础肤质数据...' });
+    const baidu = await baiduSkinDetect(image).catch(() => null);
     console.log('[/api/analyze] 百度检测结果:', baidu ?? '未返回（已忽略）');
 
-    // 百度数据注入 prompt：让 Gemini 基于已知基础信息做深度分析，减少猜测时间
     const baiduContext = baidu
-      ? `\n【参考数据·来自百度AI人脸检测，置信度 ${baidu.skinProb}%】\n- 基础肤质：${baidu.skinType}\n- 估算年龄：${baidu.age} 岁\n- 面部美感分：${baidu.beauty}/100\n请以此为参考基准进行深度临床分析，你的分析优先级高于参考数据。`
+      ? `\n【参考数据·来自百度AI人脸检测】基础肤质：${baidu.skinType}，估算年龄：${baidu.age}岁，面部美感分：${baidu.beauty}/100。请以此为参考，你的分析优先级高于参考数据。`
       : '';
 
     const systemInstruction = `你是 Aura 实验室的首席 AI 皮肤科医师，专注临床级多光谱面部分析。${baiduContext}
@@ -332,43 +338,57 @@ app.post('/api/analyze', async (req, res) => {
    - 毛孔：等级、中文描述
    - 泛红：严重程度、中文区域描述
 4. 五区评分（眼周/鼻部/脸颊/唇周/额头，0-100）
-5. 11项临床维度（水分/油脂/光滑/毛孔/均匀/弹性/敏感/光泽/屏障/糖化/炎症），每项含评分、中文标签、中文分析说明（2句话）
-6. Baumann 肤质分型：code、中文名称、中文描述（2-3句）
+5. 11项临床维度（水分/油脂/光滑/毛孔/均匀/弹性/敏感/光泽/屏障/糖化/炎症），每项含评分、中文标签、中文分析说明（2-3句话）、可选临床批注
+6. Baumann 肤质分型：code（如 OSPT）、中文名称、中文详细描述（3-4句话）
 7. 皮肤主要问题（3-5个）：中文标题、成因、建议、活性成分
 8. 定制护肤流程（5-7步，全中文）
 9. 推荐产品（3个，matchReason 用中文）
 
 【Baumann分型】O=油性/D=干性，S=敏感/R=耐受，P=色素型/N=非色素型，W=皱纹型/T=紧致型。`;
 
-    // 带超时的 Gemini 调用（最多重试一次）
-    const callGemini = () => {
-      const timeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Gemini 响应超时')), 100000)
-      );
-      const call = ai.models.generateContent({
-        model: GEMINI_MODEL,
-        contents: [
-          {
-            parts: [
-              { text: "请对这张面部照片进行临床级皮肤分析，生成 Aura 实验室专属报告。所有文字内容必须用中文。" },
-              { inlineData: { data: image, mimeType: 'image/jpeg' } }
-            ]
-          }
-        ],
-        config: {
-          systemInstruction,
-          responseMimeType: 'application/json',
-          responseSchema: SKIN_ANALYSIS_SCHEMA,
-          temperature: 0.1
-        }
-      });
-      return Promise.race([call, timeout]);
-    };
+    // ── Gemini 流式调用
+    send({ type: 'progress', phase: 'AI 正在深度分析面部图像...' });
 
-    const response = await callGemini();
+    const stream = await ai.models.generateContentStream({
+      model: GEMINI_MODEL,
+      contents: [{
+        parts: [
+          { text: '请对这张面部照片进行高精度临床级皮肤分析，生成 Aura 实验室专属报告。所有文字内容必须用中文。' },
+          { inlineData: { data: image, mimeType: 'image/jpeg' } }
+        ]
+      }],
+      config: {
+        systemInstruction,
+        responseMimeType: 'application/json',
+        responseSchema: SKIN_ANALYSIS_SCHEMA,
+        temperature: 0.1
+      }
+    });
 
-    const rawJson = JSON.parse(response.text);
+    // 根据 JSON 关键字推进阶段提示
+    const phases = [
+      { key: '"totalScore"',       phase: '正在计算综合评分...' },
+      { key: '"baumannType"',      phase: '正在分析肤质类型...' },
+      { key: '"radarMetrics"',     phase: '正在生成六维雷达图...' },
+      { key: '"detailedAnalysis"', phase: '正在精细分析皮肤状态...' },
+      { key: '"metrics"',          phase: '正在评估11项临床维度...' },
+      { key: '"problems"',         phase: '正在识别皮肤问题...' },
+      { key: '"skincareRoutine"',  phase: '正在定制护肤方案...' },
+      { key: '"recommendations"',  phase: '正在匹配产品推荐...' },
+    ];
+    let phaseIdx = 0;
+    let fullText = '';
 
+    for await (const chunk of stream) {
+      const text = chunk.text || '';
+      fullText += text;
+      while (phaseIdx < phases.length && fullText.includes(phases[phaseIdx].key)) {
+        send({ type: 'progress', phase: phases[phaseIdx].phase });
+        phaseIdx++;
+      }
+    }
+
+    const rawJson = JSON.parse(fullText);
     const skinReport = {
       ...rawJson,
       id:        randomUUID(),
@@ -376,21 +396,17 @@ app.post('/api/analyze', async (req, res) => {
       imageUrl:  `data:image/jpeg;base64,${image}`
     };
 
-    res.json(skinReport);
+    send({ type: 'done', report: skinReport });
+
   } catch (err) {
     console.error('[/api/analyze] 错误:', err.message);
-
-    if (err.message?.includes('GEMINI_API_KEY')) {
-      return res.status(500).json({ error: 'API 密钥未配置' });
-    }
-    if (err.message?.includes('API key not valid')) {
-      return res.status(401).json({ error: 'Gemini API Key 无效' });
-    }
-    if (err.message?.includes('超时') || err.message?.includes('timeout')) {
-      return res.status(504).json({ error: '分析超时，请稍后重试（服务器响应较慢）' });
-    }
-
-    res.status(500).json({ error: '肤质分析失败，请稍后重试', detail: err.message });
+    const msg = err.message?.includes('API key not valid') ? 'Gemini API Key 无效'
+               : err.message?.includes('GEMINI_API_KEY')   ? 'API 密钥未配置'
+               : '分析失败，请稍后重试';
+    send({ type: 'error', message: msg });
+  } finally {
+    clearInterval(heartbeat);
+    res.end();
   }
 });
 
