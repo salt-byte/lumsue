@@ -343,7 +343,7 @@ app.post('/api/analyze', async (req, res) => {
     // 带超时的 Gemini 调用（最多重试一次）
     const callGemini = () => {
       const timeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Gemini 响应超时')), 45000)
+        setTimeout(() => reject(new Error('Gemini 响应超时')), 55000)
       );
       const call = ai.models.generateContent({
         model: GEMINI_MODEL,
