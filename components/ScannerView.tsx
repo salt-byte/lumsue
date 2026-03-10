@@ -57,6 +57,31 @@ const ScannerView: React.FC<ScannerViewProps> = ({ onCapture, onCancel }) => {
   const statusRef = useRef<DetectionStatus>('loading_model');
   const progressRef = useRef(0);
 
+  // ─── 语音引导 ──────────────────────────────────────────────────────────────
+  const audioUnlocked = useRef(false);
+  const lastSpokenStatus = useRef<string>('');
+
+  const speak = useCallback((text: string) => {
+    if (!('speechSynthesis' in window) || !audioUnlocked.current) return;
+    if (lastSpokenStatus.current === text) return; // 避免重复播报同一句
+    lastSpokenStatus.current = text;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'zh-CN';
+    u.rate = 0.9;
+    u.pitch = 1.1;
+    u.volume = 0.9;
+    window.speechSynthesis.speak(u);
+  }, []);
+
+  const unlockAudio = useCallback(() => {
+    if (audioUnlocked.current || !('speechSynthesis' in window)) return;
+    const unlock = new SpeechSynthesisUtterance('');
+    unlock.volume = 0;
+    window.speechSynthesis.speak(unlock);
+    audioUnlocked.current = true;
+  }, []);
+
   const setTorch = useCallback(async (on: boolean) => {
     if (!stream) return;
     const track = stream.getVideoTracks()[0];
@@ -202,6 +227,12 @@ const ScannerView: React.FC<ScannerViewProps> = ({ onCapture, onCancel }) => {
       if (newStatus !== currentStatus && currentStatus !== 'counting') {
         statusRef.current = newStatus;
         setDetectionStatus(newStatus);
+        // 状态变化时播报语音
+        if (newStatus === 'no_face')   speak('请将脸部对准椭圆框');
+        if (newStatus === 'too_close') speak('距离太近，请稍微后退一点');
+        if (newStatus === 'too_far')   speak('请靠近镜头一点');
+        if (newStatus === 'low_light') speak('光线不足，请移动到明亮的地方');
+        if (newStatus === 'aligning')  speak('非常好，请保持不动');
         if (newStatus !== 'aligning') {
           alignStartRef.current = null;
           progressRef.current = 0;
@@ -220,6 +251,7 @@ const ScannerView: React.FC<ScannerViewProps> = ({ onCapture, onCancel }) => {
         if (progress >= 100 && statusRef.current !== 'counting') {
           statusRef.current = 'counting';
           setDetectionStatus('counting');
+          speak('准备拍摄，三，二，一');
           setCountdown(3);
         }
       }
@@ -374,6 +406,18 @@ const ScannerView: React.FC<ScannerViewProps> = ({ onCapture, onCancel }) => {
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-6 bg-black">
             <div className="w-16 h-16 border-2 border-[#D4AF37]/20 border-t-[#D4AF37] rounded-full animate-spin" />
             <p className="text-[10px] font-bold text-[#D4AF37] uppercase tracking-[0.4em] animate-pulse">正在激活摄像头...</p>
+          </div>
+        )}
+
+        {/* iOS 音频解锁：点击屏幕开启语音引导 */}
+        {isReady && !audioUnlocked.current && (
+          <div
+            className="absolute inset-0 z-20 flex items-end justify-center pb-40 cursor-pointer"
+            onClick={() => { unlockAudio(); speak('语音引导已开启，请将脸部对准椭圆框'); }}
+          >
+            <div className="bg-black/60 backdrop-blur-md border border-white/20 rounded-full px-8 py-4 animate-bounce">
+              <span className="text-[11px] text-white font-medium tracking-widest uppercase">点击屏幕开启语音引导</span>
+            </div>
           </div>
         )}
 
