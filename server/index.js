@@ -343,7 +343,7 @@ app.post('/api/analyze', async (req, res) => {
     // 带超时的 Gemini 调用（最多重试一次）
     const callGemini = () => {
       const timeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Gemini 响应超时')), 70000)
+        setTimeout(() => reject(new Error('Gemini 响应超时')), 100000)
       );
       const call = ai.models.generateContent({
         model: GEMINI_MODEL,
@@ -365,14 +365,7 @@ app.post('/api/analyze', async (req, res) => {
       return Promise.race([call, timeout]);
     };
 
-    let response;
-    try {
-      response = await callGemini();
-    } catch (firstErr) {
-      console.warn('[/api/analyze] 第一次调用失败，3s 后重试:', firstErr.message);
-      await new Promise(r => setTimeout(r, 3000));
-      response = await callGemini(); // 失败时抛出，由外层 catch 处理
-    }
+    const response = await callGemini();
 
     const rawJson = JSON.parse(response.text);
 
